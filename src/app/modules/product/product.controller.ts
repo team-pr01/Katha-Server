@@ -23,19 +23,19 @@ const addProduct = catchAsync(async (req, res) => {
 
 /* Get All Products with Filtering and Sorting */
 const getAllProducts = catchAsync(async (req, res) => {
-  const { 
-    category, 
-    occasion, 
+  const {
+    category,
+    occasion,
     material,
-    minPrice, 
+    minPrice,
     maxPrice,
     search,
     minRating,
     inStock,
     isFeatured,
     sortBy = 'newest',
-    skip = "0", 
-    limit = "10" 
+    skip = "0",
+    limit = "10"
   } = req.query;
 
   // Build filters object
@@ -82,13 +82,14 @@ const getSingleProductById = catchAsync(async (req, res) => {
     data: result,
   });
 });
+
 /* Update Product */
 const updateProduct = catchAsync(async (req, res) => {
   const { productId } = req.params;
   const files = (req.files as Express.Multer.File[]) || [];
   const { imagesToRemove, ...updateData } = req.body;
 
-  const imagesToRemoveArray = imagesToRemove 
+  const imagesToRemoveArray = imagesToRemove
     ? (typeof imagesToRemove === 'string' ? JSON.parse(imagesToRemove) : imagesToRemove)
     : [];
 

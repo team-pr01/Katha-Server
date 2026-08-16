@@ -4,18 +4,20 @@ export const infinitePaginate = async (
   query: any,
   skip: number,
   limit: number,
-  populate: any[] = []
+  populate: any[] = [],
+  sortCriteria: any = { createdAt: -1 }
 ) => {
   const baseQuery = {};
 
   let dbQuery = model.find(query);
 
+  // populate
   populate.forEach((pop) => {
     dbQuery = dbQuery.populate(pop);
   });
 
   const [data, total, filteredTotal] = await Promise.all([
-    dbQuery.skip(skip).limit(limit).sort({ createdAt: -1 }),
+    dbQuery.skip(skip).limit(limit).sort(sortCriteria),
     model.countDocuments(baseQuery),
     model.countDocuments(query),
   ]);

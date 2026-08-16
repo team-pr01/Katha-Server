@@ -8,8 +8,6 @@ export type TProductVariant = {
   discountedPrice?: number;
   bulkPrice?: number; // For shopkeepers/bulk buyers
   stock: number;
-  sku: string; // Unique SKU for this variant
-  images?: string[]; // Variant-specific images
 };
 
 // Review interface (separate schema)

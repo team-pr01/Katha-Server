@@ -7,13 +7,6 @@ import { infinitePaginate } from "../../utils/infinitePaginate";
 import { deleteImageFromCloudinary } from "../../utils/deleteImageFromCloudinary";
 import { TProductFilters, TProductSortOptions } from "./product.interface";
 
-// Helper function to generate SKU
-const generateSKU = (name: string, size: string, color: string): string => {
-    const prefix = name.substring(0, 3).toUpperCase();
-    const randomNum = Math.floor(Math.random() * 10000);
-    return `${prefix}-${size}-${color.substring(0, 3).toUpperCase()}-${randomNum}`;
-};
-
 // Helper function to calculate product price range
 const calculatePriceRange = (variants: any[]) => {
     const prices = variants.map(v => v.basePrice);
@@ -55,7 +48,6 @@ const addProduct = async (
         // Generate SKUs and ensure all variants have necessary fields
         variants = variants.map((variant: any) => ({
             ...variant,
-            sku: variant.sku || generateSKU(payload.name, variant.size, variant.color),
             stock: variant.stock || 0,
         }));
     }
@@ -147,39 +139,35 @@ const getAllProducts = async (
         };
     }
 
-    // Sorting logic
-    // let sortCriteria: any = {};
-    // switch (sortOption.field) {
-    //     case 'price_low_to_high':
-    //         sortCriteria = { minPrice: 1 };
-    //         break;
-    //     case 'price_high_to_low':
-    //         sortCriteria = { minPrice: -1 };
-    //         break;
-    //     case 'popular':
-    //         sortCriteria = { soldCount: -1 };
-    //         break;
-    //     case 'top_rated':
-    //         sortCriteria = { averageRating: -1, totalReviews: -1 };
-    //         break;
-    //     case 'newest':
-    //     default:
-    //         sortCriteria = { createdAt: -1 };
-    //         break;
-    // }
+    // Sorting logic - UNCOMMENTED AND FIXED
+    let sortCriteria: any = {};
+    switch (sortOption.field) {
+        case 'price_low_to_high':
+            sortCriteria = { minPrice: 1 };
+            break;
+        case 'price_high_to_low':
+            sortCriteria = { minPrice: -1 };
+            break;
+        case 'popular':
+            sortCriteria = { soldCount: -1 };
+            break;
+        case 'top_rated':
+            sortCriteria = { averageRating: -1, totalReviews: -1 };
+            break;
+        case 'newest':
+        default:
+            sortCriteria = { createdAt: -1 };
+            break;
+    }
 
-    // Select fields to populate
-    const populateOptions = [
-        { path: "addedBy", select: "name role shopName" },
-    ];
-
-    // Get products with pagination
+    // Get products with pagination and sorting
     const result = await infinitePaginate(
         Product,
         query,
         skip,
         limit,
-        populateOptions
+        [], // populate fields
+        sortCriteria // Pass sort criteria
     );
 
     // Transform response to include variant count and stock status
@@ -277,7 +265,6 @@ const updateProduct = async (
         // Generate SKUs for new variants without SKU
         variants = variants.map((variant: any) => ({
             ...variant,
-            sku: variant.sku || generateSKU(payload.name || product.name, variant.size, variant.color),
             stock: variant.stock || 0,
         }));
     }
@@ -324,20 +311,6 @@ const deleteProduct = async (productId: string, userId: string) => {
                 }
             })
         );
-    }
-
-    // Also delete variant-specific images
-    for (const variant of product.variants) {
-        if (variant.images?.length) {
-            await Promise.all(
-                variant.images.map(async (url: string) => {
-                    const publicId = url.split("/").pop()?.split(".")[0];
-                    if (publicId) {
-                        await deleteImageFromCloudinary(publicId);
-                    }
-                })
-            );
-        }
     }
 
     // Delete all reviews

@@ -32,16 +32,6 @@ const productVariantSchema = new Schema<TProductVariant>({
     min: 0,
     default: 0,
   },
-  sku: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
-  },
-  images: {
-    type: [String],
-    default: [],
-  },
 });
 
 // Main Product Schema
@@ -77,19 +67,19 @@ const productSchema = new Schema<TProduct>(
       type: [String],
       default: [],
     },
-    
+
     // Variants
     variants: {
       type: [productVariantSchema],
       default: [],
       validate: {
-        validator: function(variants: TProductVariant[]) {
+        validator: function (variants: TProductVariant[]) {
           return variants.length > 0;
         },
         message: "Product must have at least one variant",
       },
     },
-    
+
     // Aggregated price fields
     minPrice: {
       type: Number,
@@ -105,7 +95,7 @@ const productSchema = new Schema<TProduct>(
       type: Number,
       min: 0,
     },
-    
+
     // Reviews
     reviews: {
       type: [Schema.Types.ObjectId],
@@ -123,7 +113,7 @@ const productSchema = new Schema<TProduct>(
       default: 0,
       min: 0,
     },
-    
+
     // Stats
     soldCount: {
       type: Number,
@@ -134,14 +124,6 @@ const productSchema = new Schema<TProduct>(
       type: Number,
       default: 0,
       min: 0,
-    },
-    
-    // Metadata
-    addedBy: {
-      type: Schema.Types.ObjectId,
-      ref: "Vendor",
-      required: true,
-      index: true,
     },
     isActive: {
       type: Boolean,
@@ -179,17 +161,17 @@ productSchema.index({ createdAt: -1 });
 productSchema.index({ minPrice: 1, maxPrice: 1 });
 
 // Pre-save middleware to calculate aggregated fields
-productSchema.pre('save', function(next) {
+productSchema.pre('save', function (next) {
   if (this.variants && this.variants.length > 0) {
     const prices = this.variants.map(v => v.basePrice);
     const discountedPrices = this.variants
       .map(v => v.discountedPrice)
       .filter((p): p is number => p !== undefined && p !== null);
-    
+
     this.minPrice = Math.min(...prices);
     this.maxPrice = Math.max(...prices);
-    this.minDiscountedPrice = discountedPrices.length > 0 
-      ? Math.min(...discountedPrices) 
+    this.minDiscountedPrice = discountedPrices.length > 0
+      ? Math.min(...discountedPrices)
       : undefined;
   }
   next();
