@@ -1,16 +1,15 @@
 import { ObjectId } from "mongoose";
 
-// Variant interface for different size-color combinations
 export type TProductVariant = {
-  size: string; // e.g., "S", "M", "L", "XL", "38", "40"
-  color: string; // e.g., "Red", "Blue", "Black"
+  size: string;
+  color: string;
   basePrice: number;
   discountedPrice?: number;
   bulkPrice?: number; // For shopkeepers/bulk buyers
   stock: number;
 };
 
-// Review interface (separate schema)
+// Review interface
 export type TReview = {
   user: ObjectId;
   rating: number;
@@ -22,11 +21,13 @@ export type TReview = {
 
 export type TProduct = {
   name: string;
+  slug: string;
   category: string;
-  occasion?: string; // e.g., "Wedding", "Casual", "Festival"
+  occasionNames: string[];
+  subOccasionNames: string[];
   description: string;
-  images: string[]; // Main product images
-  material: string[]; // Array of materials used
+  images: string[];
+  material: string[];
   
   // Variants
   variants: TProductVariant[];
@@ -37,7 +38,7 @@ export type TProduct = {
   minDiscountedPrice?: number;
   
   // Review related
-  reviews: ObjectId[]; // References to Review documents
+  reviews: ObjectId[];
   averageRating: number;
   totalReviews: number;
   
@@ -46,7 +47,6 @@ export type TProduct = {
   totalClicks: number;
   
   // Metadata
-  addedBy: ObjectId; // Vendor ID
   isActive: boolean;
   isFeatured?: boolean;
   tags?: string[];
@@ -65,6 +65,8 @@ export type TProductFilters = {
   minRating?: number;
   inStock?: boolean;
   isFeatured?: boolean;
+  occasionNames?: string[];
+  subOccasionNames?: string[];
 };
 
 export type TProductSortOptions = {

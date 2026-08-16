@@ -45,24 +45,107 @@ const addProduct = async (
             ? JSON.parse(payload.variants)
             : payload.variants;
 
-        // Generate SKUs and ensure all variants have necessary fields
         variants = variants.map((variant: any) => ({
             ...variant,
             stock: variant.stock || 0,
         }));
     }
 
+    // Validate variants exist
+    if (!variants || variants.length === 0) {
+        throw new AppError(httpStatus.BAD_REQUEST, "Product must have at least one variant");
+    }
+
     // Calculate price range
     const { minPrice, maxPrice, minDiscountedPrice } = calculatePriceRange(variants);
 
-    const product = await Product.create({
-        ...payload,
+    // Handle occasion names - parse if string
+    let occasionNames = payload.occasionNames || [];
+    if (typeof occasionNames === 'string') {
+        try {
+            occasionNames = JSON.parse(occasionNames);
+        } catch {
+            occasionNames = occasionNames.split(',').map((n: string) => n.trim());
+        }
+    }
+
+    if (!Array.isArray(occasionNames)) {
+        occasionNames = [occasionNames];
+    }
+
+    // Validate occasion names exist
+    if (!occasionNames || occasionNames.length === 0) {
+        throw new AppError(httpStatus.BAD_REQUEST, "At least one occasion is required");
+    }
+
+    // Filter out empty strings
+    occasionNames = occasionNames.filter((n: string) => n && n.trim() !== '');
+
+    // Handle sub-occasion names - parse if string
+    let subOccasionNames = payload.subOccasionNames || [];
+    if (typeof subOccasionNames === 'string') {
+        try {
+            subOccasionNames = JSON.parse(subOccasionNames);
+        } catch {
+            subOccasionNames = subOccasionNames.split(',').map((n: string) => n.trim());
+        }
+    }
+
+    if (!Array.isArray(subOccasionNames)) {
+        subOccasionNames = [subOccasionNames];
+    }
+
+    subOccasionNames = subOccasionNames.filter((n: string) => n && n.trim() !== '');
+
+    // Handle material - parse if string
+    let material = payload.material || [];
+    if (typeof material === 'string') {
+        try {
+            material = JSON.parse(material);
+        } catch {
+            material = material.split(',').map((m: string) => m.trim());
+        }
+    }
+
+    if (!Array.isArray(material)) {
+        material = [material];
+    }
+    material = material.filter((m: string) => m && m.trim() !== '');
+
+    // Handle tags - parse if string
+    let tags = payload.tags || [];
+    if (typeof tags === 'string') {
+        try {
+            tags = JSON.parse(tags);
+        } catch {
+            tags = tags.split(',').map((t: string) => t.trim());
+        }
+    }
+
+    if (!Array.isArray(tags)) {
+        tags = [tags];
+    }
+    tags = tags.filter((t: string) => t && t.trim() !== '');
+
+    // Create product with all fields
+    const productData = {
+        name: payload.name,
+        category: payload.category,
+        description: payload.description,
         images: imageUrls,
         variants,
         minPrice,
         maxPrice,
         minDiscountedPrice,
-    });
+        occasionNames: occasionNames,
+        subOccasionNames: subOccasionNames,
+        material: material,
+        tags: tags,
+        isActive: payload.isActive !== undefined ? payload.isActive : true,
+        isFeatured: payload.isFeatured || false,
+    };
+
+    const product = await Product.create(productData);
 
     return product;
 };
@@ -81,9 +164,20 @@ const getAllProducts = async (
         query.category = filters.category;
     }
 
-    // Occasion filter
-    if (filters.occasion) {
-        query.occasion = filters.occasion;
+    // Occasion names filter - Check if ANY occasion matches
+    if (filters.occasionNames && filters.occasionNames.length > 0) {
+        // Use $in for case-insensitive matching
+        query.occasionNames = {
+            $in: filters.occasionNames.map((name: string) => new RegExp(`^${name}$`, 'i'))
+        };
+    }
+
+    // Sub-occasion names filter - Check if ANY sub-occasion matches
+    if (filters.subOccasionNames && filters.subOccasionNames.length > 0) {
+        // Use $in for case-insensitive matching
+        query.subOccasionNames = {
+            $in: filters.subOccasionNames.map((name: string) => new RegExp(`^${name}$`, 'i'))
+        };
     }
 
     // Material filter (array intersection)
@@ -93,23 +187,19 @@ const getAllProducts = async (
 
     // Price range filter
     if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
-        query.$or = [
-            { minPrice: {} },
-            { minDiscountedPrice: {} }
-        ];
+        const priceConditions: any[] = [];
 
-        if (filters.minPrice !== undefined) {
-            query.$or[0].minPrice.$gte = filters.minPrice;
-            if (query.$or[1].minDiscountedPrice) {
-                query.$or[1].minDiscountedPrice.$gte = filters.minPrice;
-            }
+        const priceCondition: any = {};
+        if (filters.minPrice !== undefined) priceCondition.$gte = filters.minPrice;
+        if (filters.maxPrice !== undefined) priceCondition.$lte = filters.maxPrice;
+
+        if (Object.keys(priceCondition).length > 0) {
+            priceConditions.push({ minPrice: priceCondition });
+            priceConditions.push({ minDiscountedPrice: priceCondition });
         }
 
-        if (filters.maxPrice !== undefined) {
-            query.$or[0].minPrice.$lte = filters.maxPrice;
-            if (query.$or[1].minDiscountedPrice) {
-                query.$or[1].minDiscountedPrice.$lte = filters.maxPrice;
-            }
+        if (priceConditions.length > 0) {
+            query.$or = priceConditions;
         }
     }
 
@@ -139,7 +229,7 @@ const getAllProducts = async (
         };
     }
 
-    // Sorting logic - UNCOMMENTED AND FIXED
+    // Sorting logic
     let sortCriteria: any = {};
     switch (sortOption.field) {
         case 'price_low_to_high':
@@ -166,8 +256,8 @@ const getAllProducts = async (
         query,
         skip,
         limit,
-        [], // populate fields
-        sortCriteria // Pass sort criteria
+        [],
+        sortCriteria,
     );
 
     // Transform response to include variant count and stock status
@@ -211,6 +301,16 @@ const getSingleProductById = async (productId: string) => {
         totalStock: productObj.variants.reduce((acc: number, v: any) => acc + v.stock, 0),
         inStock: productObj.variants.some((v: any) => v.stock > 0),
     };
+};
+
+const getSingleProductBySlug = async (slug: string) => {
+  const result = await Product.findOne({ slug });
+
+  if (!result) {
+    throw new AppError(httpStatus.NOT_FOUND, "Product not found");
+  }
+
+  return result;
 };
 
 /* Update Product */
@@ -289,16 +389,11 @@ const updateProduct = async (
 };
 
 /* Delete Product */
-const deleteProduct = async (productId: string, userId: string) => {
+const deleteProduct = async (productId: string) => {
     const product = await Product.findById(productId);
 
     if (!product) {
         throw new AppError(httpStatus.NOT_FOUND, "Product not found");
-    }
-
-    // Check ownership
-    if (userId.toString() !== product.addedBy.toString()) {
-        throw new AppError(httpStatus.FORBIDDEN, "Not allowed");
     }
 
     // Delete all images from Cloudinary
@@ -387,6 +482,7 @@ export const ProductServices = {
     addProduct,
     getAllProducts,
     getSingleProductById,
+    getSingleProductBySlug,
     updateProduct,
     deleteProduct,
     addReview,

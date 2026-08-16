@@ -20,6 +20,11 @@ router.get(
 );
 
 router.get(
+  "/slug/:slug",
+  ProductControllers.getSingleProductBySlug
+);
+
+router.get(
   "/:productId",
   ProductControllers.getSingleProductById
 );

@@ -83,6 +83,19 @@ const getSingleProductById = catchAsync(async (req, res) => {
   });
 });
 
+const getSingleProductBySlug = catchAsync(async (req, res) => {
+  const { slug } = req.params;
+
+  const result = await ProductServices.getSingleProductBySlug(slug);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Product fetched successfully",
+    data: result,
+  });
+});
+
 /* Update Product */
 const updateProduct = catchAsync(async (req, res) => {
   const { productId } = req.params;
@@ -114,7 +127,6 @@ const deleteProduct = catchAsync(async (req, res) => {
 
   const result = await ProductServices.deleteProduct(
     productId,
-    req.user.userId
   );
 
   sendResponse(res, {
@@ -183,6 +195,7 @@ export const ProductControllers = {
   addProduct,
   getAllProducts,
   getSingleProductById,
+  getSingleProductBySlug,
   updateProduct,
   deleteProduct,
   addReview,

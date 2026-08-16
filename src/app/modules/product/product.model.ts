@@ -1,5 +1,6 @@
 import { Schema, model } from "mongoose";
 import { TProduct, TProductVariant, TReview } from "./product.interface";
+import slugify from "slugify";
 
 // Variant Schema
 const productVariantSchema = new Schema<TProductVariant>({
@@ -43,15 +44,28 @@ const productSchema = new Schema<TProduct>(
       trim: true,
       index: true,
     },
+    slug: {
+      type: String,
+      unique: true,
+      trim: true,
+      index: true,
+    },
     category: {
       type: String,
       required: true,
       trim: true,
       index: true,
     },
-    occasion: {
-      type: String,
+    occasionNames: {
+      type: [String],
+      required: true,
       trim: true,
+      index: true, // For direct filtering
+    },
+    subOccasionNames: {
+      type: [String], // Array of sub-occasion names
+      default: [],
+      index: true, // For direct filtering
     },
     description: {
       type: String,
@@ -173,6 +187,17 @@ productSchema.pre('save', function (next) {
     this.minDiscountedPrice = discountedPrices.length > 0
       ? Math.min(...discountedPrices)
       : undefined;
+  }
+  next();
+});
+
+productSchema.pre("save", function (next) {
+  if (this.isModified("name")) {
+    this.slug = slugify(this.name, {
+      lower: true,
+      strict: true,
+      trim: true,
+    });
   }
   next();
 });
