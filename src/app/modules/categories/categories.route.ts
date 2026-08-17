@@ -1,28 +1,46 @@
 import express from "express";
-import { CategoryController } from "./categories.controller";
-import auth from "../../middlewares/auth";
+import { CategoryControllers } from "./categories.controller";
 import { UserRole } from "../auth/auth.constants";
+import { multerUpload } from "../../config/multer.config";
+import auth from "../../middlewares/auth";
 
 const router = express.Router();
 
-// Add category (admin only)
+// Admin routes
 router.post(
   "/add",
-  auth(UserRole.admin, UserRole.moderator),
-  CategoryController.addCategory
+  auth(UserRole.admin),
+  multerUpload.single("file"),
+  CategoryControllers.addCategory
 );
 
-// Get all categories
-router.get("/:areaName", CategoryController.getAllCategoriesByAreaName);
+router.patch(
+  "/update/:categoryId",
+  auth(UserRole.admin),
+  multerUpload.single("file"),
+  CategoryControllers.updateCategory
+);
 
-// Get a single category by ID
-router.get("/:categoryId", CategoryController.getSingleCategoryById);
-
-// Delete a category (admin only)
 router.delete(
   "/delete/:categoryId",
-  auth(UserRole.admin, UserRole.moderator),
-  CategoryController.deleteCategory
+  auth(UserRole.admin),
+  CategoryControllers.deleteCategory
+);
+
+// Public routes
+router.get(
+  "/",
+  CategoryControllers.getAllCategories
+);
+
+router.get(
+  "/area/:areaName",
+  CategoryControllers.getCategoriesByAreaName
+);
+
+router.get(
+  "/:categoryId",
+  CategoryControllers.getSingleCategory
 );
 
 export const CategoryRoutes = router;

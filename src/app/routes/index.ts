@@ -4,6 +4,7 @@ import { AdminRoutes } from "../modules/admin/admin.route";
 import { UserRoutes } from "../modules/users/users.route";
 import { ProductRoutes } from "../modules/product/product.route";
 import { OccasionRoutes } from "../modules/occasion/occasion.route";
+import { CategoryRoutes } from "../modules/categories/categories.route";
 
 const router = Router();
 
@@ -27,6 +28,10 @@ const moduleRoutes = [
   {
     path: "/occasion",
     route: OccasionRoutes,
+  },
+  {
+    path: "/category",
+    route: CategoryRoutes,
   },
   {
     path: "/product",

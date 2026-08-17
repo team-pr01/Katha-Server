@@ -56,6 +56,12 @@ const productSchema = new Schema<TProduct>(
       trim: true,
       index: true,
     },
+    subCategory: {
+      type: String,
+      required: true,
+      trim: true,
+      index: true,
+    },
     occasionNames: {
       type: [String],
       required: true,

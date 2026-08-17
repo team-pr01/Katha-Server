@@ -23,6 +23,7 @@ export type TProduct = {
   name: string;
   slug: string;
   category: string;
+  subCategory: string;
   occasionNames: string[];
   subOccasionNames: string[];
   description: string;

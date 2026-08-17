@@ -131,6 +131,7 @@ const addProduct = async (
     const productData = {
         name: payload.name,
         category: payload.category,
+        subCategory: payload.subCategory,
         description: payload.description,
         images: imageUrls,
         variants,
