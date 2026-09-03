@@ -25,11 +25,13 @@ const addProduct = catchAsync(async (req, res) => {
 const getAllProducts = catchAsync(async (req, res) => {
   const {
     category,
-    occasion,
+    subCategory,
+    occasionNames,
+    subOccasionNames,
     material,
     minPrice,
     maxPrice,
-    search,
+    keyword,
     minRating,
     inStock,
     isFeatured,
@@ -38,14 +40,16 @@ const getAllProducts = catchAsync(async (req, res) => {
     limit = "10"
   } = req.query;
 
-  // Build filters object
+  // Build filters object - Parse arrays from comma-separated strings
   const filters = {
-    category: category as string,
-    occasion: occasion as string,
-    material: material ? (material as string).split(',') : undefined,
+    category: category ? (category as string).split(',').map(c => c.trim()) : undefined,
+    subCategory: subCategory ? (subCategory as string).split(',').map(c => c.trim()) : undefined,
+    occasionNames: occasionNames ? (occasionNames as string).split(',').map(c => c.trim()) : undefined,
+    subOccasionNames: subOccasionNames ? (subOccasionNames as string).split(',').map(c => c.trim()) : undefined,
+    material: material ? (material as string).split(',').map(c => c.trim()) : undefined,
     minPrice: minPrice ? Number(minPrice) : undefined,
     maxPrice: maxPrice ? Number(maxPrice) : undefined,
-    search: search as string,
+    keyword: keyword as string,
     minRating: minRating ? Number(minRating) : undefined,
     inStock: inStock === 'true' ? true : inStock === 'false' ? false : undefined,
     isFeatured: isFeatured === 'true' ? true : isFeatured === 'false' ? false : undefined,
@@ -68,7 +72,6 @@ const getAllProducts = catchAsync(async (req, res) => {
     data: result,
   });
 });
-
 /* Get Single Product */
 const getSingleProductById = catchAsync(async (req, res) => {
   const { productId } = req.params;

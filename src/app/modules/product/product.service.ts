@@ -3,9 +3,9 @@ import httpStatus from "http-status";
 import Product, { Review } from "./product.model";
 import AppError from "../../errors/AppError";
 import { sendImageToCloudinary } from "../../utils/sendImageToCloudinary";
-import { infinitePaginate } from "../../utils/infinitePaginate";
 import { deleteImageFromCloudinary } from "../../utils/deleteImageFromCloudinary";
 import { TProductFilters, TProductSortOptions } from "./product.interface";
+import Material from "../materials/materials.model";
 
 // Helper function to calculate product price range
 const calculatePriceRange = (variants: any[]) => {
@@ -25,47 +25,180 @@ const addProduct = async (
     payload: any,
     files: Express.Multer.File[]
 ) => {
-    // Upload main product images
+    // =========================================================
+    // 1. Upload Product/Variant Images
+    // =========================================================
+
     let imageUrls: string[] = [];
-    if (files.length) {
+
+    if (files?.length) {
         const uploads = files.map(async (file, index) => {
             const { secure_url } = await sendImageToCloudinary(
                 `product-${Date.now()}-${index}`,
                 file.path
             );
+
             return secure_url;
         });
+
         imageUrls = await Promise.all(uploads);
     }
 
-    // Process variants
-    let variants = [];
-    if (payload.variants) {
-        variants = typeof payload.variants === 'string'
-            ? JSON.parse(payload.variants)
-            : payload.variants;
+    // =========================================================
+    // 2. Parse Variants
+    // =========================================================
 
-        variants = variants.map((variant: any) => ({
-            ...variant,
-            stock: variant.stock || 0,
-        }));
+    let variants = payload.variants || [];
+
+    if (typeof variants === "string") {
+        try {
+            variants = JSON.parse(variants);
+        } catch {
+            throw new AppError(
+                httpStatus.BAD_REQUEST,
+                "Invalid variants format"
+            );
+        }
     }
 
-    // Validate variants exist
-    if (!variants || variants.length === 0) {
-        throw new AppError(httpStatus.BAD_REQUEST, "Product must have at least one variant");
+    if (!Array.isArray(variants) || variants.length === 0) {
+        throw new AppError(
+            httpStatus.BAD_REQUEST,
+            "Product must have at least one variant"
+        );
     }
 
-    // Calculate price range
-    const { minPrice, maxPrice, minDiscountedPrice } = calculatePriceRange(variants);
+    // =========================================================
+    // 3. Process Variants
+    // =========================================================
 
-    // Handle occasion names - parse if string
+    variants = variants.map((variant: any, index: number) => {
+        // -----------------------------
+        // Parse Materials
+        // -----------------------------
+
+        let materials = variant.materials || [];
+
+        if (typeof materials === "string") {
+            try {
+                materials = JSON.parse(materials);
+            } catch {
+                materials = [];
+            }
+        }
+
+        if (!Array.isArray(materials)) {
+            materials = [materials];
+        }
+
+        materials = materials
+            .filter(
+                (material: any) =>
+                    material &&
+                    material.materialId &&
+                    material.materialVariantId
+            )
+            .map((material: any) => ({
+                materialId: material.materialId,
+                materialVariantId: material.materialVariantId,
+                quantity: Number(material.quantity) || 0,
+                unit: material.unit || "piece",
+            }));
+
+        // -----------------------------
+        // Validate Dimensions
+        // -----------------------------
+
+        const dimensions = variant.dimensions;
+
+        if (
+            !dimensions ||
+            dimensions.length === undefined ||
+            dimensions.width === undefined ||
+            dimensions.height === undefined
+        ) {
+            throw new AppError(
+                httpStatus.BAD_REQUEST,
+                `Dimensions are required for variant ${index + 1}`
+            );
+        }
+
+        // -----------------------------
+        // Return Variant
+        // -----------------------------
+
+        return {
+            name: variant.name,
+            description: variant.description,
+
+            packageContents: Array.isArray(variant.packageContents)
+                ? variant.packageContents
+                : [],
+
+            images: imageUrls,
+
+            design: variant.design,
+            size: variant.size,
+            color: variant.color,
+
+            packSize: variant.packSize || "Single",
+
+            dimensions: {
+                length: Number(dimensions.length),
+                width: Number(dimensions.width),
+                height: Number(dimensions.height),
+                unit: dimensions.unit || "cm",
+            },
+
+            weight: variant.weight,
+
+            basePrice: Number(variant.basePrice),
+
+            discountedPrice:
+                variant.discountedPrice !== undefined &&
+                variant.discountedPrice !== null
+                    ? Number(variant.discountedPrice)
+                    : undefined,
+
+            bulkPrice:
+                variant.bulkPrice !== undefined &&
+                variant.bulkPrice !== null
+                    ? Number(variant.bulkPrice)
+                    : undefined,
+
+            stock:
+                variant.stock !== undefined &&
+                variant.stock !== null
+                    ? Number(variant.stock)
+                    : 0,
+
+            materials,
+        };
+    });
+
+    // =========================================================
+    // 4. Calculate Price Range
+    // =========================================================
+
+    const {
+        minPrice,
+        maxPrice,
+        minDiscountedPrice,
+    } = calculatePriceRange(variants);
+
+    // =========================================================
+    // 5. Parse Occasion Names
+    // =========================================================
+
     let occasionNames = payload.occasionNames || [];
-    if (typeof occasionNames === 'string') {
+
+    if (typeof occasionNames === "string") {
         try {
             occasionNames = JSON.parse(occasionNames);
         } catch {
-            occasionNames = occasionNames.split(',').map((n: string) => n.trim());
+            occasionNames = occasionNames
+                .split(",")
+                .map((name: string) => name.trim());
         }
     }
 
@@ -73,21 +206,30 @@ const addProduct = async (
         occasionNames = [occasionNames];
     }
 
-    // Validate occasion names exist
-    if (!occasionNames || occasionNames.length === 0) {
-        throw new AppError(httpStatus.BAD_REQUEST, "At least one occasion is required");
+    occasionNames = occasionNames.filter(
+        (name: string) => name && name.trim() !== ""
+    );
+
+    if (occasionNames.length === 0) {
+        throw new AppError(
+            httpStatus.BAD_REQUEST,
+            "At least one occasion is required"
+        );
     }
 
-    // Filter out empty strings
-    occasionNames = occasionNames.filter((n: string) => n && n.trim() !== '');
+    // =========================================================
+    // 6. Parse Sub Occasion Names
+    // =========================================================
 
-    // Handle sub-occasion names - parse if string
     let subOccasionNames = payload.subOccasionNames || [];
-    if (typeof subOccasionNames === 'string') {
+
+    if (typeof subOccasionNames === "string") {
         try {
             subOccasionNames = JSON.parse(subOccasionNames);
         } catch {
-            subOccasionNames = subOccasionNames.split(',').map((n: string) => n.trim());
+            subOccasionNames = subOccasionNames
+                .split(",")
+                .map((name: string) => name.trim());
         }
     }
 
@@ -95,56 +237,142 @@ const addProduct = async (
         subOccasionNames = [subOccasionNames];
     }
 
-    subOccasionNames = subOccasionNames.filter((n: string) => n && n.trim() !== '');
+    subOccasionNames = subOccasionNames.filter(
+        (name: string) => name && name.trim() !== ""
+    );
 
-    // Handle material - parse if string
-    let material = payload.material || [];
-    if (typeof material === 'string') {
-        try {
-            material = JSON.parse(material);
-        } catch {
-            material = material.split(',').map((m: string) => m.trim());
-        }
-    }
+    // =========================================================
+    // 7. Parse Tags
+    // =========================================================
 
-    if (!Array.isArray(material)) {
-        material = [material];
-    }
-    material = material.filter((m: string) => m && m.trim() !== '');
-
-    // Handle tags - parse if string
     let tags = payload.tags || [];
-    if (typeof tags === 'string') {
+
+    if (typeof tags === "string") {
         try {
             tags = JSON.parse(tags);
         } catch {
-            tags = tags.split(',').map((t: string) => t.trim());
+            tags = tags
+                .split(",")
+                .map((tag: string) => tag.trim());
         }
     }
 
     if (!Array.isArray(tags)) {
         tags = [tags];
     }
-    tags = tags.filter((t: string) => t && t.trim() !== '');
 
-    // Create product with all fields
+    tags = tags.filter(
+        (tag: string) => tag && tag.trim() !== ""
+    );
+
+    // =========================================================
+    // 8. Parse Care Instructions
+    // =========================================================
+
+    let careInstructions = payload.careInstructions || [];
+
+    if (typeof careInstructions === "string") {
+        try {
+            careInstructions = JSON.parse(careInstructions);
+        } catch {
+            careInstructions = careInstructions
+                .split(",")
+                .map((instruction: string) => instruction.trim());
+        }
+    }
+
+    if (!Array.isArray(careInstructions)) {
+        careInstructions = [careInstructions];
+    }
+
+    careInstructions = careInstructions.filter(
+        (instruction: string) =>
+            instruction && instruction.trim() !== ""
+    );
+
+    // =========================================================
+    // 9. Parse Customization
+    // =========================================================
+
+    let isCustomizationAvailable = false;
+
+    if (payload.isCustomizationAvailable !== undefined) {
+        if (typeof payload.isCustomizationAvailable === "string") {
+            isCustomizationAvailable =
+                payload.isCustomizationAvailable.toLowerCase() === "true";
+        } else {
+            isCustomizationAvailable = Boolean(
+                payload.isCustomizationAvailable
+            );
+        }
+    }
+
+    // =========================================================
+    // 10. Processing Time
+    // =========================================================
+
+    const processingTime =
+        payload.processingTime &&
+        String(payload.processingTime).trim() !== ""
+            ? payload.processingTime
+            : null;
+
+    // =========================================================
+    // 11. Boolean Fields
+    // =========================================================
+
+    let isActive = true;
+
+    if (payload.isActive !== undefined) {
+        if (typeof payload.isActive === "string") {
+            isActive = payload.isActive.toLowerCase() === "true";
+        } else {
+            isActive = Boolean(payload.isActive);
+        }
+    }
+
+    let isFeatured = false;
+
+    if (payload.isFeatured !== undefined) {
+        if (typeof payload.isFeatured === "string") {
+            isFeatured = payload.isFeatured.toLowerCase() === "true";
+        } else {
+            isFeatured = Boolean(payload.isFeatured);
+        }
+    }
+
+    // =========================================================
+    // 12. Create Product Data
+    // =========================================================
+
     const productData = {
         name: payload.name,
         category: payload.category,
         subCategory: payload.subCategory,
-        description: payload.description,
-        images: imageUrls,
+
+        occasionNames,
+        subOccasionNames,
+
+        careInstructions,
+
+        isCustomizationAvailable,
+        processingTime,
+
         variants,
+
         minPrice,
         maxPrice,
         minDiscountedPrice,
-        occasionNames: occasionNames,
-        subOccasionNames: subOccasionNames,
-        material: material,
-        tags: tags,
-        isActive: payload.isActive !== undefined ? payload.isActive : true,
-        isFeatured: payload.isFeatured || false,
+
+        tags,
+
+        isActive,
+        isFeatured,
     };
+
+    // =========================================================
+    // 13. Create Product
+    // =========================================================
 
     const product = await Product.create(productData);
 
@@ -153,37 +381,46 @@ const addProduct = async (
 
 /* Get All Products with Advanced Filtering and Sorting */
 const getAllProducts = async (
-    filters: TProductFilters = {},
+    filters: TProductFilters,
     sortOption: TProductSortOptions = { field: 'newest' },
     skip = 0,
     limit = 10
 ) => {
     const query: any = { isActive: true };
 
-    // Category filter
-    if (filters.category) {
-        query.category = filters.category;
+    // Category filter - Support array
+    if (filters.category && filters.category.length > 0) {
+        query.category = {
+            $in: filters.category.map((cat: string) => new RegExp(`^${cat}$`, 'i'))
+        };
     }
 
-    // Occasion names filter - Check if ANY occasion matches
+    // SubCategory filter - Support array
+    if (filters.subCategory && filters.subCategory.length > 0) {
+        query.subCategory = {
+            $in: filters.subCategory.map((sub: string) => new RegExp(`^${sub}$`, 'i'))
+        };
+    }
+
+    // Occasion names filter - Support array
     if (filters.occasionNames && filters.occasionNames.length > 0) {
-        // Use $in for case-insensitive matching
         query.occasionNames = {
             $in: filters.occasionNames.map((name: string) => new RegExp(`^${name}$`, 'i'))
         };
     }
 
-    // Sub-occasion names filter - Check if ANY sub-occasion matches
+    // Sub-occasion names filter - Support array
     if (filters.subOccasionNames && filters.subOccasionNames.length > 0) {
-        // Use $in for case-insensitive matching
         query.subOccasionNames = {
             $in: filters.subOccasionNames.map((name: string) => new RegExp(`^${name}$`, 'i'))
         };
     }
 
-    // Material filter (array intersection)
+    // Material filter - Support array (search in variant materials array)
     if (filters.material && filters.material.length > 0) {
-        query.material = { $in: filters.material };
+        query['variants.materials.materialId'] = {
+            $in: filters.material.map((mat: string) => new RegExp(`^${mat}$`, 'i'))
+        };
     }
 
     // Price range filter
@@ -224,9 +461,9 @@ const getAllProducts = async (
     }
 
     // Search filter (text search)
-    if (filters.search) {
+    if (filters.keyword) {
         query.$text = {
-            $search: filters.search,
+            $search: filters.keyword,
         };
     }
 
@@ -251,34 +488,171 @@ const getAllProducts = async (
             break;
     }
 
+    // Get total count
+    const total = await Product.countDocuments(query);
+
     // Get products with pagination and sorting
-    const result = await infinitePaginate(
-        Product,
-        query,
-        skip,
-        limit,
-        [],
-        sortCriteria,
+    const products = await Product.find(query)
+        .sort(sortCriteria)
+        .skip(skip)
+        .limit(limit)
+        .lean();
+
+    // Transform response to include variant count, stock status, and material details
+    const transformedData = await Promise.all(
+        products.map(async (product: any) => {
+            // Process each variant to find and attach material variant details
+            const enrichedVariants = await Promise.all(
+                product.variants.map(async (variant: any) => {
+                    // Check if variant has materials array
+                    if (!variant.materials || variant.materials.length === 0) {
+                        return variant;
+                    }
+
+                    // Enrich each material in the array
+                    const enrichedMaterials = await Promise.all(
+                        variant.materials.map(async (materialRef: any) => {
+                            try {
+                                // Find the material document
+                                const material = await Material.findById(materialRef.materialId).lean();
+
+                                if (!material) {
+                                    return materialRef;
+                                }
+
+                                // Find the specific material variant
+                                const materialVariant = material.variants.find(
+                                    (v: any) => v._id.toString() === materialRef.materialVariantId.toString()
+                                );
+
+                                if (!materialVariant) {
+                                    return materialRef;
+                                }
+
+                                // Return enriched material
+                                return {
+                                    materialId: materialRef.materialId,
+                                    materialVariantId: materialRef.materialVariantId,
+                                    quantity: materialRef.quantity,
+                                    unit: materialRef.unit,
+                                    // Material variant details
+                                    design: materialVariant.design,
+                                    color: materialVariant.color,
+                                    madeOf: materialVariant.madeOf,
+                                    purchasePrice: materialVariant.purchasePrice,
+                                    stockUnit: materialVariant.stockUnit,
+                                    // Material basic info
+                                    materialName: material.name,
+                                    materialCategory: material.category,
+                                };
+                            } catch (error) {
+                                return materialRef;
+                            }
+                        })
+                    );
+
+                    return {
+                        ...variant,
+                        materials: enrichedMaterials,
+                    };
+                })
+            );
+
+            return {
+                ...product,
+                variants: enrichedVariants,
+                totalStock: product.variants.reduce((acc: number, v: any) => acc + v.stock, 0),
+                variantCount: product.variants.length,
+                inStock: product.variants.some((v: any) => v.stock > 0),
+            };
+        })
     );
 
-    // Transform response to include variant count and stock status
-    const transformedData = result.data.map((product: any) => ({
-        ...product.toObject(),
-        totalStock: product.variants.reduce((acc: number, v: any) => acc + v.stock, 0),
-        variantCount: product.variants.length,
-        inStock: product.variants.some((v: any) => v.stock > 0),
-    }));
+    // Calculate pagination info
+    const totalPages = Math.ceil(total / limit);
+    const currentPage = Math.floor(skip / limit) + 1;
 
     return {
-        ...result,
         data: transformedData,
+        meta: {
+            total,
+            filteredTotal: total,
+            skip,
+            limit,
+            totalPages,
+            currentPage,
+            hasMore: skip + limit < total,
+        },
     };
 };
 
 /* Get Single Product */
+// Helper function to enrich materials array
+const enrichMaterialsArray = async (materials: any[]) => {
+    if (!materials || materials.length === 0) {
+        return materials;
+    }
+
+    return await Promise.all(
+        materials.map(async (materialRef: any) => {
+            try {
+                const material = await Material.findById(materialRef.materialId).lean();
+
+                if (!material) {
+                    return materialRef;
+                }
+
+                const materialVariant = material.variants.find(
+                    (v: any) => v._id.toString() === materialRef.materialVariantId.toString()
+                );
+
+                if (!materialVariant) {
+                    return materialRef;
+                }
+
+                return {
+                    materialId: materialRef.materialId,
+                    materialVariantId: materialRef.materialVariantId,
+                    quantity: materialRef.quantity,
+                    unit: materialRef.unit,
+                    // Material variant details
+                    design: materialVariant.design,
+                    color: materialVariant.color,
+                    madeOf: materialVariant.madeOf,
+                    purchasePrice: materialVariant.purchasePrice,
+                    stockUnit: materialVariant.stockUnit,
+                    // Material basic info
+                    materialName: material.name,
+                    materialCategory: material.category,
+                };
+            } catch (error) {
+                return materialRef;
+            }
+        })
+    );
+};
+
+// Helper function to enrich variants with materials array
+const enrichVariantsWithMaterials = async (variants: any[]) => {
+    return await Promise.all(
+        variants.map(async (variant: any) => {
+            // Check if variant has materials array
+            if (!variant.materials || variant.materials.length === 0) {
+                return variant;
+            }
+
+            const enrichedMaterials = await enrichMaterialsArray(variant.materials);
+
+            return {
+                ...variant,
+                materials: enrichedMaterials,
+            };
+        })
+    );
+};
+
 const getSingleProductById = async (productId: string) => {
     const product = await Product.findById(productId)
-        .populate("addedBy", "name role shopName")
         .populate({
             path: "reviews",
             populate: {
@@ -297,21 +671,49 @@ const getSingleProductById = async (productId: string) => {
     });
 
     const productObj = product.toObject();
+
+    // Enrich variants with material details
+    const enrichedVariants = await enrichVariantsWithMaterials(productObj.variants);
+
     return {
         ...productObj,
+        variants: enrichedVariants,
         totalStock: productObj.variants.reduce((acc: number, v: any) => acc + v.stock, 0),
         inStock: productObj.variants.some((v: any) => v.stock > 0),
     };
 };
 
 const getSingleProductBySlug = async (slug: string) => {
-  const result = await Product.findOne({ slug });
+    const product = await Product.findOne({ slug })
+        .populate({
+            path: "reviews",
+            populate: {
+                path: "user",
+                select: "name profileImage",
+            },
+        });
 
-  if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, "Product not found");
-  }
+    if (!product) {
+        throw new AppError(httpStatus.NOT_FOUND, "Product not found");
+    }
 
-  return result;
+    // Increment click count
+    await Product.findOneAndUpdate(
+        { slug },
+        { $inc: { totalClicks: 1 } }
+    );
+
+    const productObj = product.toObject();
+
+    // Enrich variants with material details
+    const enrichedVariants = await enrichVariantsWithMaterials(productObj.variants);
+
+    return {
+        ...productObj,
+        variants: enrichedVariants,
+        totalStock: productObj.variants.reduce((acc: number, v: any) => acc + v.stock, 0),
+        inStock: productObj.variants.some((v: any) => v.stock > 0),
+    };
 };
 
 /* Update Product */

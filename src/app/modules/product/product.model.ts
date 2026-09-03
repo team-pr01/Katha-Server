@@ -2,8 +2,80 @@ import { Schema, model } from "mongoose";
 import { TProduct, TProductVariant, TReview } from "./product.interface";
 import slugify from "slugify";
 
+// Dimensions Schema
+const dimensionsSchema = new Schema({
+  length: {
+    type: Number,
+    required: true,
+    min: 0,
+  },
+  width: {
+    type: Number,
+    required: true,
+    min: 0,
+  },
+  height: {
+    type: Number,
+    required: true,
+    min: 0,
+  },
+  unit: {
+    type: String,
+    enum: ["cm", "mm", "inch", "m", "ft"],
+    default: "cm",
+  },
+});
+
+// Material Reference Schema (for variant materials)
+const materialReferenceSchema = new Schema({
+  materialId: {
+    type: Schema.Types.ObjectId,
+    ref: "Material",
+    required: true,
+  },
+  materialVariantId: {
+    type: Schema.Types.ObjectId,
+    required: true,
+  },
+  quantity: {
+    type: Number,
+    required: true,
+    min: 0,
+  },
+  unit: {
+    type: String,
+    default: "piece",
+  },
+});
+
 // Variant Schema
 const productVariantSchema = new Schema<TProductVariant>({
+  name: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  description: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+
+
+  packageContents: {
+    type: [String],
+    default: [],
+  },
+  images: {
+    type: [String],
+    required: true,
+    default: [],
+  },
+  design: {
+    type: String,
+    required: true,
+    trim: true
+  },
   size: {
     type: String,
     required: true,
@@ -14,6 +86,23 @@ const productVariantSchema = new Schema<TProductVariant>({
     required: true,
     trim: true,
   },
+  packSize: {
+    type: String,
+    trim: true,
+    default: "Single",
+  },
+
+  dimensions: {
+    type: dimensionsSchema,
+    required: true,
+  },
+
+  weight: {
+    type: String, // e.g., "450g", "1.2kg"
+    trim: true,
+    required: true,
+  },
+
   basePrice: {
     type: Number,
     required: true,
@@ -32,6 +121,12 @@ const productVariantSchema = new Schema<TProductVariant>({
     required: true,
     min: 0,
     default: 0,
+  },
+
+  // Material reference - FIXED: Removed default: []
+  materials: {
+    type: [materialReferenceSchema],
+    required: false, // Make it optional if not all variants have materials
   },
 });
 
@@ -66,29 +161,28 @@ const productSchema = new Schema<TProduct>(
       type: [String],
       required: true,
       trim: true,
-      index: true, // For direct filtering
+      index: true,
     },
     subOccasionNames: {
-      type: [String], // Array of sub-occasion names
-      default: [],
-      index: true, // For direct filtering
-    },
-    description: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    images: {
-      type: [String],
-      required: true,
-      default: [],
-    },
-    material: {
       type: [String],
       default: [],
+      index: true,
     },
 
-    // Variants
+    careInstructions: {
+      type: [String],
+      default: [],
+    },
+    isCustomizationAvailable: {
+      type: Boolean,
+      default: false,
+    },
+    processingTime: {
+      type: String,
+      default: null,
+    },
+
+    // Variants - each variant has its own dimensions and weight
     variants: {
       type: [productVariantSchema],
       default: [],
@@ -180,6 +274,13 @@ productSchema.index({ soldCount: -1 });
 productSchema.index({ createdAt: -1 });
 productSchema.index({ minPrice: 1, maxPrice: 1 });
 
+// Indexes for variant fields
+productSchema.index({ "variants.packSize": 1 });
+productSchema.index({ "variants.dimensions.length": 1 });
+productSchema.index({ "variants.dimensions.width": 1 });
+productSchema.index({ "variants.dimensions.height": 1 });
+productSchema.index({ "variants.material.materialId": 1 });
+
 // Pre-save middleware to calculate aggregated fields
 productSchema.pre('save', function (next) {
   if (this.variants && this.variants.length > 0) {
@@ -197,6 +298,7 @@ productSchema.pre('save', function (next) {
   next();
 });
 
+// Pre-save middleware to generate slug
 productSchema.pre("save", function (next) {
   if (this.isModified("name")) {
     this.slug = slugify(this.name, {

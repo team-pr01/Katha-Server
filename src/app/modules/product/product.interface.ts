@@ -1,15 +1,37 @@
 import { ObjectId } from "mongoose";
 
-export type TProductVariant = {
-  size: string;
-  color: string;
-  basePrice: number;
-  discountedPrice?: number;
-  bulkPrice?: number; // For shopkeepers/bulk buyers
-  stock: number;
+type TUnits = 'cm' | 'mm' | 'inch' | 'm' | 'ft';
+
+export type TDimensions = {
+  length: number;
+  width: number;
+  height: number;
+  unit: TUnits;
 };
 
-// Review interface
+export type TProductVariant = {
+  name: string;
+  images: string[];
+  description: string;
+  packageContents: string[];
+  design: string;
+  size: string;
+  color: string;
+  packSize: string; // e.g., "Single", "Pack of 2", "Pack of 4"
+  dimensions: TDimensions;
+  weight: string; // e.g., "450g", "1.2kg"
+  basePrice: number;
+  discountedPrice?: number;
+  bulkPrice?: number;
+  stock: number;
+  materials: {
+    materialId: ObjectId;
+    materialVariantId: ObjectId;
+    quantity: number;
+    unit: string;
+  }[];
+};
+
 export type TReview = {
   user: ObjectId;
   rating: number;
@@ -21,32 +43,32 @@ export type TReview = {
 
 export type TProduct = {
   name: string;
-  slug: string;
+  slug?: string;
   category: string;
   subCategory: string;
   occasionNames: string[];
   subOccasionNames: string[];
-  description: string;
-  images: string[];
-  material: string[];
-  
+  careInstructions: string[];
+  isCustomizationAvailable: boolean;
+  processingTime?: string;
+
   // Variants
   variants: TProductVariant[];
-  
-  // Aggregated fields (calculated from variants)
+
+  // Aggregated fields
   minPrice: number;
   maxPrice: number;
   minDiscountedPrice?: number;
-  
-  // Review related
+
+  // Reviews
   reviews: ObjectId[];
   averageRating: number;
   totalReviews: number;
-  
+
   // Stats
   soldCount: number;
   totalClicks: number;
-  
+
   // Metadata
   isActive: boolean;
   isFeatured?: boolean;
@@ -55,19 +77,25 @@ export type TProduct = {
   updatedAt?: Date;
 };
 
-// Filter and sort types
 export type TProductFilters = {
-  category?: string;
-  occasion?: string;
+  category?: string[];
+  subCategory?: string[];
+  occasionNames?: string[];
+  subOccasionNames?: string[];
   material?: string[];
+  packSize?: string[]; // Filter by pack size
   minPrice?: number;
   maxPrice?: number;
-  search?: string; // For text search
+  keyword?: string;
   minRating?: number;
   inStock?: boolean;
   isFeatured?: boolean;
-  occasionNames?: string[];
-  subOccasionNames?: string[];
+  minLength?: number; // Filter by dimensions
+  maxLength?: number;
+  minWidth?: number;
+  maxWidth?: number;
+  minHeight?: number;
+  maxHeight?: number;
 };
 
 export type TProductSortOptions = {

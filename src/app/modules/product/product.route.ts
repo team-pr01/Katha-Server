@@ -10,7 +10,7 @@ const router = express.Router();
 router.post(
   "/add",
   auth(UserRole.admin),
-  multerUpload.array("files", 6),
+  multerUpload.array("files", 10),
   ProductControllers.addProduct
 );
 
