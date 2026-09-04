@@ -7,6 +7,7 @@ import { OccasionRoutes } from "../modules/occasion/occasion.route";
 import { CategoryRoutes } from "../modules/categories/categories.route";
 import { MaterialRoutes } from "../modules/materials/materials.route";
 import { CouponCodeRoutes } from "../modules/couponCode/couponCode.route";
+import { OrderRoutes } from "../modules/order/order.route";
 
 const router = Router();
 
@@ -46,6 +47,10 @@ const moduleRoutes = [
   {
     path: "/coupon-code",
     route: CouponCodeRoutes,
+  },
+  {
+    path: "/order",
+    route: OrderRoutes,
   },
 ];
 

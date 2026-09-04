@@ -5,11 +5,8 @@ import AppError from "../../errors/AppError";
 
 // Add Coupon Code
 const addCouponCode = async (payload: any) => {
-  const payloadData = {
-    code: payload.code,
-  };
 
-  const coupon = await CouponCode.create(payloadData);
+  const coupon = await CouponCode.create(payload);
   return coupon;
 };
 

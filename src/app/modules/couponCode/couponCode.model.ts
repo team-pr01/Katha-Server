@@ -7,6 +7,10 @@ const CouponCodeSchema = new Schema<TCouponCode>(
       type: String,
       required: true,
     },
+    discountPercentage: {
+      type: Number,
+      required: true,
+    },
   },
   {
     timestamps: true,
