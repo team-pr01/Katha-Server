@@ -23,7 +23,7 @@ router.delete(
     MaterialControllers.removeVariant
 );
 
-router.get("/", auth(UserRole.admin), MaterialControllers.getAllMaterials);
+router.get("/", MaterialControllers.getAllMaterials);
 router.get("/:materialId", auth(UserRole.admin), MaterialControllers.getSingleMaterial);
 
 export const MaterialRoutes = router;

@@ -83,6 +83,7 @@ export type TProductFilters = {
   occasionNames?: string[];
   subOccasionNames?: string[];
   material?: string[];
+  colors?: string[];
   packSize?: string[]; // Filter by pack size
   minPrice?: number;
   maxPrice?: number;
@@ -99,5 +100,5 @@ export type TProductFilters = {
 };
 
 export type TProductSortOptions = {
-  field: 'price_low_to_high' | 'price_high_to_low' | 'popular' | 'top_rated' | 'newest';
+  field: 'price_low_to_high' | 'price_high_to_low' | 'popular' | 'top_rated' | 'latest';
 };

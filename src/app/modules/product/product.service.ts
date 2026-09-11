@@ -6,6 +6,7 @@ import { sendImageToCloudinary } from "../../utils/sendImageToCloudinary";
 import { deleteImageFromCloudinary } from "../../utils/deleteImageFromCloudinary";
 import { TProductFilters, TProductSortOptions } from "./product.interface";
 import Material from "../materials/materials.model";
+import mongoose from "mongoose";
 
 // Helper function to calculate product price range
 const calculatePriceRange = (variants: any[]) => {
@@ -382,10 +383,11 @@ const addProduct = async (
 /* Get All Products with Advanced Filtering and Sorting */
 const getAllProducts = async (
     filters: TProductFilters,
-    sortOption: TProductSortOptions = { field: 'newest' },
+    sortOption: TProductSortOptions = { field: 'latest' },
     skip = 0,
     limit = 10
 ) => {
+    console.log(filters);
     const query: any = { isActive: true };
 
     // Category filter - Support array
@@ -416,10 +418,20 @@ const getAllProducts = async (
         };
     }
 
-    // Material filter - Support array (search in variant materials array)
-    if (filters.material && filters.material.length > 0) {
-        query['variants.materials.materialId'] = {
-            $in: filters.material.map((mat: string) => new RegExp(`^${mat}$`, 'i'))
+    // ✅ CORRECT: Material filter using ObjectId
+if (filters.material && filters.material.length > 0) {
+    // Convert string IDs to ObjectIds
+    const materialObjectIds = filters.material.map((id: string) => new mongoose.Types.ObjectId(id));
+    
+    query['variants.materials.materialId'] = {
+        $in: materialObjectIds
+    };
+}
+
+    // Color filter - Search in variants.color (singular)
+    if (filters.colors && filters.colors.length > 0) {
+        query['variants.color'] = {
+            $in: filters.colors.map((color: string) => new RegExp(`^${color}$`, 'i'))
         };
     }
 
@@ -482,7 +494,7 @@ const getAllProducts = async (
         case 'top_rated':
             sortCriteria = { averageRating: -1, totalReviews: -1 };
             break;
-        case 'newest':
+        case 'latest':
         default:
             sortCriteria = { createdAt: -1 };
             break;
@@ -720,42 +732,12 @@ const getSingleProductBySlug = async (slug: string) => {
 const updateProduct = async (
     productId: string,
     payload: any,
-    files: Express.Multer.File[],
-    imagesToRemove?: string[]
+    files: Express.Multer.File[]
 ) => {
     const product = await Product.findById(productId);
 
     if (!product) {
         throw new AppError(httpStatus.NOT_FOUND, "Product not found");
-    }
-
-    // Handle image removal
-    let imageUrls = product.images || [];
-    if (imagesToRemove && imagesToRemove.length > 0) {
-        // Remove images from Cloudinary
-        await Promise.all(
-            imagesToRemove.map(async (url: string) => {
-                const publicId = url.split("/").pop()?.split(".")[0];
-                if (publicId) {
-                    await deleteImageFromCloudinary(publicId);
-                }
-            })
-        );
-        // Filter out removed images
-        imageUrls = imageUrls.filter(url => !imagesToRemove.includes(url));
-    }
-
-    // Upload new images
-    if (files?.length) {
-        const uploads = files.map(async (file, index) => {
-            const { secure_url } = await sendImageToCloudinary(
-                `product-${Date.now()}-${index}`,
-                file.path
-            );
-            return secure_url;
-        });
-        const uploadedImages = await Promise.all(uploads);
-        imageUrls = [...imageUrls, ...uploadedImages];
     }
 
     // Process variants update
@@ -765,11 +747,60 @@ const updateProduct = async (
             ? JSON.parse(payload.variants)
             : payload.variants;
 
-        // Generate SKUs for new variants without SKU
-        variants = variants.map((variant: any) => ({
-            ...variant,
-            stock: variant.stock || 0,
-        }));
+        // Process each variant
+        variants = await Promise.all(
+            variants.map(async (variant: any) => {
+                let variantImageUrls: string[] = variant.images || [];
+
+                // Handle removal of variant images
+                if (variant.imagesToRemove && variant.imagesToRemove.length > 0) {
+                    await Promise.all(
+                        variant.imagesToRemove.map(async (url: string) => {
+                            const publicId = url.split("/").pop()?.split(".")[0];
+                            if (publicId) {
+                                await deleteImageFromCloudinary(publicId);
+                            }
+                        })
+                    );
+                    variantImageUrls = variantImageUrls.filter(
+                        (url: string) => !variant.imagesToRemove.includes(url)
+                    );
+                }
+
+                return {
+                    ...variant,
+                    images: variantImageUrls,
+                    stock: variant.stock || 0,
+                    materials: variant.materials || [],
+                    packageContents: variant.packageContents || [],
+                };
+            })
+        );
+    }
+
+    // Upload new variant images
+    if (files && files.length > 0) {
+        let fileIndex = 0;
+        for (let i = 0; i < variants.length && fileIndex < files.length; i++) {
+            const variant = variants[i];
+
+            // Upload all remaining files to the last variant if no variant-specific count
+            const remainingFiles = files.length - fileIndex;
+            const variantCount = i === variants.length - 1 ? remainingFiles : 1;
+
+            for (let j = 0; j < variantCount && fileIndex < files.length; j++) {
+                const file = files[fileIndex];
+                if (file) {
+                    const { secure_url } = await sendImageToCloudinary(
+                        `product-${Date.now()}-${i}-${j}`,
+                        file.path
+                    );
+                    if (!variant.images) variant.images = [];
+                    variant.images.push(secure_url);
+                    fileIndex++;
+                }
+            }
+        }
     }
 
     // Recalculate price range
@@ -779,7 +810,6 @@ const updateProduct = async (
         productId,
         {
             ...payload,
-            images: imageUrls,
             variants,
             minPrice,
             maxPrice,
@@ -799,10 +829,21 @@ const deleteProduct = async (productId: string) => {
         throw new AppError(httpStatus.NOT_FOUND, "Product not found");
     }
 
+    // Collect all images from all variants
+    const allImages: string[] = [];
+    
+    if (product.variants && product.variants.length > 0) {
+        for (const variant of product.variants) {
+            if (variant.images && variant.images.length > 0) {
+                allImages.push(...variant.images);
+            }
+        }
+    }
+
     // Delete all images from Cloudinary
-    if (product.images?.length) {
+    if (allImages.length > 0) {
         await Promise.all(
-            product.images.map(async (url: string) => {
+            allImages.map(async (url: string) => {
                 const publicId = url.split("/").pop()?.split(".")[0];
                 if (publicId) {
                     await deleteImageFromCloudinary(publicId);

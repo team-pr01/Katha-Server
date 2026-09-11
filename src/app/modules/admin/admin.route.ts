@@ -5,7 +5,7 @@ import { AdminController } from './admin.controller';
 
 const router = express.Router();
 
-router.get("/stats", auth(UserRole.admin, UserRole.moderator), AdminController.getAdminStats);
+router.get("/stats", auth(UserRole.admin), AdminController.getAdminStats);
 
 router.put(
     "/change-role",

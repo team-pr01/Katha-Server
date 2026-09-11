@@ -3,6 +3,7 @@ import httpStatus from "http-status";
 import AppError from "../../errors/AppError";
 import { TMaterialFilters, TMaterials, TMaterialVariant } from "./materials.type";
 import Material from "./materials.model";
+import Product from "../product/product.model";
 
 // Add Material
 const addMaterial = async (payload: TMaterials) => {
@@ -65,19 +66,50 @@ const getAllMaterials = async (
         .limit(limit)
         .lean();
 
+    // Get product counts for each material
+    const materialsWithProductCounts = await Promise.all(
+        materials.map(async (material: any) => {
+            // Count products that use this material
+            const productCount = await Product.countDocuments({
+                'variants.materials.materialId': material._id,
+                isActive: true,
+            });
+
+            // Count products for each variant
+            const variantCounts = await Promise.all(
+                material.variants.map(async (variant: any) => {
+                    const count = await Product.countDocuments({
+                        'variants.materials': {
+                            $elemMatch: {
+                                materialId: material._id,
+                                materialVariantId: variant._id,
+                            }
+                        },
+                        isActive: true,
+                    });
+                    return {
+                        ...variant,
+                        productCount: count,
+                    };
+                })
+            );
+
+            return {
+                ...material,
+                totalVariants: material.variants.length,
+                totalStock: material.variants.reduce((acc: number, v: any) => acc + v.stock, 0),
+                productCount,
+                variants: variantCounts,
+            };
+        })
+    );
+
     // Calculate pagination info
     const totalPages = Math.ceil(total / limit);
     const currentPage = Math.floor(skip / limit) + 1;
 
-    // Transform response to include variant count and total stock
-    const transformedData = materials.map((material: any) => ({
-        ...material,
-        totalVariants: material.variants.length,
-        totalStock: material.variants.reduce((acc: number, v: any) => acc + v.stock, 0),
-    }));
-
     return {
-        data: transformedData,
+        data: materialsWithProductCounts,
         meta: {
             total,
             filteredTotal: total,

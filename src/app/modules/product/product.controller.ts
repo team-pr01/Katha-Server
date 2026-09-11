@@ -29,6 +29,7 @@ const getAllProducts = catchAsync(async (req, res) => {
     occasionNames,
     subOccasionNames,
     material,
+    colors,
     minPrice,
     maxPrice,
     keyword,
@@ -47,6 +48,7 @@ const getAllProducts = catchAsync(async (req, res) => {
     occasionNames: occasionNames ? (occasionNames as string).split(',').map(c => c.trim()) : undefined,
     subOccasionNames: subOccasionNames ? (subOccasionNames as string).split(',').map(c => c.trim()) : undefined,
     material: material ? (material as string).split(',').map(c => c.trim()) : undefined,
+    colors: colors ? (colors as string).split(',').map(c => c.trim()) : undefined,
     minPrice: minPrice ? Number(minPrice) : undefined,
     maxPrice: maxPrice ? Number(maxPrice) : undefined,
     keyword: keyword as string,
@@ -103,17 +105,13 @@ const getSingleProductBySlug = catchAsync(async (req, res) => {
 const updateProduct = catchAsync(async (req, res) => {
   const { productId } = req.params;
   const files = (req.files as Express.Multer.File[]) || [];
-  const { imagesToRemove, ...updateData } = req.body;
+  const {...updateData } = req.body;
 
-  const imagesToRemoveArray = imagesToRemove
-    ? (typeof imagesToRemove === 'string' ? JSON.parse(imagesToRemove) : imagesToRemove)
-    : [];
 
   const result = await ProductServices.updateProduct(
     productId,
     updateData,
     files,
-    imagesToRemoveArray
   );
 
   sendResponse(res, {

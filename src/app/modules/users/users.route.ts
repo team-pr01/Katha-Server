@@ -8,7 +8,7 @@ const router = express.Router();
 
 router.get(
   "/",
-  auth(UserRole.admin, UserRole.moderator),
+  auth(UserRole.admin),
   UserControllers.getAllUsers
 );
 router.get(
@@ -16,24 +16,23 @@ router.get(
   auth(
     UserRole.user,
     UserRole.admin,
-    UserRole.moderator,
   ),
   UserControllers.getMe
 );
 
 router.patch(
   "/suspend/:userId",
-  auth(UserRole.admin, UserRole.moderator),
+  auth(UserRole.admin),
   UserControllers.suspendUser
 );
 router.patch(
   "/suspension/withdraw/:userId",
-  auth(UserRole.admin, UserRole.moderator),
+  auth(UserRole.admin),
   UserControllers.withdrawSuspension
 );
 router.get(
   "/:userId",
-  auth(UserRole.admin, UserRole.moderator),
+  auth(UserRole.admin),
   UserControllers.getSingleUserById
 );
 
@@ -50,27 +49,27 @@ router.patch(
 
 router.patch(
   "/save-push-token",
-  auth(UserRole.user, UserRole.admin, UserRole.moderator),
+  auth(UserRole.user, UserRole.admin),
   UserControllers.savePushToken
 );
 
 router.patch(
   "/delete-account",
-  auth(UserRole.user, UserRole.moderator, UserRole.user),
+  auth(UserRole.user, UserRole.user),
   UserControllers.deleteAccount
 );
 
 // For admin and moderator only
 router.patch(
   "/account/restore/:userId",
-  auth(UserRole.admin, UserRole.moderator),
+  auth(UserRole.admin),
   UserControllers.restoreUsersDeletedAccount
 );
 
 // For admin and moderator only
 router.patch(
   "/assign-page",
-  auth(UserRole.admin, UserRole.moderator),
+  auth(UserRole.admin),
   UserControllers.assignPagesToUser
 );
 
