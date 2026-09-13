@@ -44,12 +44,14 @@ const trackOrder = async (payload: {
             personalizedVerifyQuery.phoneNumber = phoneNumber;
         }
 
-        const personalizedOrder = await PersonalizedOrder.findOne({
-            _id: orderId,
-            ...personalizedVerifyQuery,
-        }).lean();
+        const personalizedOrder = await PersonalizedOrder.findById(orderId).lean();
 
-        if (personalizedOrder) {
+        if (
+            personalizedOrder &&
+            ((verifyWith === "email" && personalizedOrder.email === email) ||
+                (verifyWith === "phoneNumber" &&
+                    personalizedOrder.phoneNumber === phoneNumber))
+        ) {
             order = personalizedOrder as any;
             orderType = "personalized";
         }
@@ -80,102 +82,115 @@ const trackOrder = async (payload: {
     };
 };
 
-// Build tracking timeline
+// Build tracking timeline - ALWAYS returns all 5 steps
 const buildTrackingTimeline = (order: any) => {
-    const timeline = [];
-
-    const created = order.createdAt;
+    // const created = order.createdAt;
     const updated = order.updatedAt;
+    const currentStatus = order.orderStatus;
 
-    // Order Placed
-    timeline.push({
-        step: "Order Placed",
-        description: "Your order has been placed successfully",
-        status: "completed",
-        date: created,
-    });
+    // Define status order (index matters)
+    const statusOrder = ["pending", "confirmed", "processing", "shipped", "delivered"];
+    const currentIndex = statusOrder.indexOf(currentStatus);
 
-    // Order Confirmed
-    if (["shipped", "delivered", "returned"].includes(order.orderStatus)) {
-        timeline.push({
+    // Handle cancelled / returned separately
+    const isCancelled = currentStatus === "cancelled";
+    const isReturned = currentStatus === "returned";
+
+    // Helper to determine step state
+    const getStepState = (stepIndex: number) => {
+        if (isCancelled || isReturned) {
+            // If cancelled/returned, all steps before the cancellation point are completed
+            return stepIndex <= currentIndex ? "completed" : "pending";
+        }
+        if (stepIndex < currentIndex) return "completed";
+        if (stepIndex === currentIndex) return "completed"; // Current step is also completed
+        return "pending";
+    };
+
+    // Helper to determine date for each step
+    const getStepDate = (stepIndex: number) => {
+        if (isCancelled || isReturned) {
+            return stepIndex <= currentIndex ? updated : null;
+        }
+        return stepIndex <= currentIndex ? updated : null;
+    };
+
+    // Build all 5 timelines
+    const timeline = [
+        {
+            step: "Order Placed",
+            status: getStepState(0),
+            description:
+                getStepState(0) === "completed"
+                    ? "Your order has been placed successfully"
+                    : "Your order will be placed soon",
+            date: getStepDate(0),
+            current: currentStatus === "pending",
+        },
+        {
             step: "Order Confirmed",
-            description: "Seller has confirmed your order",
-            status: "completed",
-            date: updated,
-        });
-    }
-
-    // Packed & Ready
-    if (["shipped", "delivered"].includes(order.orderStatus)) {
-        timeline.push({
-            step: "Packed & Ready",
-            description: "Your order has been packed and ready for shipment",
-            status: "completed",
-            date: updated,
-        });
-    }
-
-    // Shipped
-    if (["shipped", "delivered"].includes(order.orderStatus)) {
-        timeline.push({
+            status: getStepState(1),
+            description:
+                getStepState(1) === "completed"
+                    ? "Seller has confirmed your order"
+                    : "Waiting for seller confirmation",
+            date: getStepDate(1),
+            current: currentStatus === "confirmed",
+        },
+        {
+            step: "Processing",
+            status: getStepState(2),
+            description:
+                getStepState(2) === "completed"
+                    ? "Your order is being packed and processed"
+                    : "Order will be processed soon",
+            date: getStepDate(2),
+            current: currentStatus === "processing",
+        },
+        {
             step: "Shipped",
-            description: "Order has been shipped from the warehouse",
-            status: "completed",
-            date: updated,
-            current: order.orderStatus === "shipped",
-        });
-    }
-
-    // Out for Delivery
-    if (order.orderStatus === "delivered") {
-        timeline.push({
-            step: "Out for Delivery",
-            description: "Order is out for delivery",
-            status: "completed",
-            date: updated,
-        });
-    } else {
-        timeline.push({
-            step: "Out for Delivery",
-            description: "Order will be out for delivery soon",
-            status: "pending",
-            date: null,
-        });
-    }
-
-    // Delivered
-    if (order.orderStatus === "delivered") {
-        timeline.push({
+            status: getStepState(3),
+            description:
+                getStepState(3) === "completed"
+                    ? "Order has been shipped from the warehouse"
+                    : "Order will be shipped soon",
+            date: getStepDate(3),
+            current: currentStatus === "shipped",
+        },
+        {
             step: "Delivered",
-            description: "Order delivered successfully",
-            status: "completed",
-            date: updated,
-        });
-    } else {
-        timeline.push({
-            step: "Delivered",
-            description: "Order will be delivered to your address",
-            status: "pending",
-            date: order.trackingDetails?.estimatedDelivery || null,
-        });
-    }
+            status: getStepState(4),
+            description:
+                getStepState(4) === "completed"
+                    ? "Order delivered successfully"
+                    : "Order will be delivered to your address",
+            date: order.trackingDetails?.estimatedDelivery
+                ? getStepState(4) === "completed"
+                    ? updated
+                    : order.trackingDetails.estimatedDelivery
+                : null,
+            current: currentStatus === "delivered",
+        },
+    ];
 
-    // Handle cancelled / returned
-    if (order.orderStatus === "cancelled") {
+    // If cancelled or returned, mark the relevant step
+    if (isCancelled) {
         timeline.push({
             step: "Cancelled",
-            description: "Order has been cancelled",
             status: "cancelled",
+            description: "Order has been cancelled",
             date: updated,
+            current: true,
         });
     }
 
-    if (order.orderStatus === "returned") {
+    if (isReturned) {
         timeline.push({
             step: "Returned",
-            description: "Order has been returned",
             status: "returned",
+            description: "Order has been returned",
             date: updated,
+            current: true,
         });
     }
 
