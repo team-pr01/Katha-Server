@@ -42,11 +42,11 @@ router.post(
 // router.post("/resend-otp", AuthControllers.resendOtp);
 
 
-// router.post(
-//   "/refresh-token",
-//   validateRequest(AuthValidations.refreshTokenValidationSchema),
-//   AuthControllers.refreshToken
-// );
+router.post(
+  "/refresh-token",
+  validateRequest(AuthValidations.refreshTokenValidationSchema),
+  AuthControllers.refreshToken
+);
 
 // router.post("/verify-reset-password-otp", AuthControllers.verifyResetOtp);
 // router.post("/resend-forgot-password-otp", AuthControllers.resendForgotPasswordOtp);
