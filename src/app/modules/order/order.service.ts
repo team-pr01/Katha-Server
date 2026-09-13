@@ -211,20 +211,83 @@ const getSingleOrder = async (orderId: string) => {
 };
 
 // Get My Orders
-const getMyOrders = async (userId: string, skip = 0, limit = 10) => {
-    const query = { userId };
+const getMyOrders = async (
+    userId: string,
+    skip = 0,
+    limit = 10,
+    filters: TOrderFilters = {}
+) => {
+    const query: any = { userId };
+
+    if (filters.keyword) {
+        query.$or = [
+            { orderId: { $regex: filters.keyword, $options: "i" } },
+        ];
+    }
+
+    if (filters.orderStatus) {
+        query.orderStatus = filters.orderStatus;
+    }
 
     const total = await Order.countDocuments(query);
 
     const orders = await Order.find(query)
-        .populate("orderedItems.productId", "name slug images")
+        .populate("orderedItems.productId", "name slug variants")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean();
 
+    // Enrich ordered items with variant details
+    const enrichedOrders = orders.map((order: any) => {
+        const enrichedItems = order.orderedItems.map((item: any) => {
+            const product = item.productId;
+            let variant = null;
+
+            // Find the variant from the product's variants array
+            if (product && product.variants && item.variantId) {
+                variant = product.variants.find(
+                    (v: any) => v._id.toString() === item.variantId.toString()
+                );
+            }
+
+            return {
+                ...item,
+                variant: variant
+                    ? {
+                          _id: variant._id,
+                          name: variant.name,
+                          images: variant.images || [],
+                          description: variant.description,
+                          design: variant.design,
+                          size: variant.size,
+                          color: variant.color,
+                          packSize: variant.packSize,
+                          weight: variant.weight,
+                          basePrice: variant.basePrice,
+                          discountedPrice: variant.discountedPrice,
+                          bulkPrice: variant.bulkPrice,
+                      }
+                    : null,
+                // Keep product with limited fields
+                productId: product
+                    ? {
+                          _id: product._id,
+                          name: product.name,
+                          slug: product.slug,
+                      }
+                    : item.productId,
+            };
+        });
+
+        return {
+            ...order,
+            orderedItems: enrichedItems,
+        };
+    });
+
     return {
-        data: orders,
+        data: enrichedOrders,
         meta: {
             total,
             filteredTotal: total,

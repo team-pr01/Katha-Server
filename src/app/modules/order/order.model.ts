@@ -27,6 +27,19 @@ const orderItemSchema = new Schema({
         required: true,
         min: 1,
     },
+
+    addedBy: {
+        type: String,
+        enum: ["user", "admin"],
+        index: true,
+    },
+    confirmedAt: { type: Date, default: null },
+    packedAt: { type: Date, default: null },
+    shippedAt: { type: Date, default: null },
+    deliveredAt: { type: Date, default: null },
+    cancelledAt: { type: Date, default: null },
+    returnedAt: { type: Date, default: null },
+    paidAt: { type: Date, default: null },
 });
 
 // Shipping Address Schema

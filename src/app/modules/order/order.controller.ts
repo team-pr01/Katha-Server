@@ -81,12 +81,18 @@ const getSingleOrder = catchAsync(async (req, res) => {
 
 // Get My Orders
 const getMyOrders = catchAsync(async (req, res) => {
-    const { skip = "0", limit = "10" } = req.query;
+    const { skip = "0", limit = "10", keyword, orderStatus } = req.query;
+
+    const filters = {
+        keyword: keyword as string,
+        orderStatus: orderStatus as string,
+    };
 
     const result = await OrderService.getMyOrders(
         req.user.userId,
         Number(skip),
-        Number(limit)
+        Number(limit),
+        filters
     );
 
     sendResponse(res, {

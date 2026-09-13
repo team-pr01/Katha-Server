@@ -180,17 +180,61 @@ const getSingleOrder = (orderId) => __awaiter(void 0, void 0, void 0, function* 
     return order;
 });
 // Get My Orders
-const getMyOrders = (userId_1, ...args_1) => __awaiter(void 0, [userId_1, ...args_1], void 0, function* (userId, skip = 0, limit = 10) {
+const getMyOrders = (userId_1, ...args_1) => __awaiter(void 0, [userId_1, ...args_1], void 0, function* (userId, skip = 0, limit = 10, filters = {}) {
     const query = { userId };
+    if (filters.keyword) {
+        query.$or = [
+            { orderId: { $regex: filters.keyword, $options: "i" } },
+        ];
+    }
+    if (filters.orderStatus) {
+        query.orderStatus = filters.orderStatus;
+    }
     const total = yield order_model_1.default.countDocuments(query);
     const orders = yield order_model_1.default.find(query)
-        .populate("orderedItems.productId", "name slug images")
+        .populate("orderedItems.productId", "name slug variants")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean();
+    // Enrich ordered items with variant details
+    const enrichedOrders = orders.map((order) => {
+        const enrichedItems = order.orderedItems.map((item) => {
+            const product = item.productId;
+            let variant = null;
+            // Find the variant from the product's variants array
+            if (product && product.variants && item.variantId) {
+                variant = product.variants.find((v) => v._id.toString() === item.variantId.toString());
+            }
+            return Object.assign(Object.assign({}, item), { variant: variant
+                    ? {
+                        _id: variant._id,
+                        name: variant.name,
+                        images: variant.images || [],
+                        description: variant.description,
+                        design: variant.design,
+                        size: variant.size,
+                        color: variant.color,
+                        packSize: variant.packSize,
+                        weight: variant.weight,
+                        basePrice: variant.basePrice,
+                        discountedPrice: variant.discountedPrice,
+                        bulkPrice: variant.bulkPrice,
+                    }
+                    : null, 
+                // Keep product with limited fields
+                productId: product
+                    ? {
+                        _id: product._id,
+                        name: product.name,
+                        slug: product.slug,
+                    }
+                    : item.productId });
+        });
+        return Object.assign(Object.assign({}, order), { orderedItems: enrichedItems });
+    });
     return {
-        data: orders,
+        data: enrichedOrders,
         meta: {
             total,
             filteredTotal: total,

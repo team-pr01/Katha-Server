@@ -12,6 +12,7 @@ const couponCode_route_1 = require("../modules/couponCode/couponCode.route");
 const order_route_1 = require("../modules/order/order.route");
 const personalizedOrder_route_1 = require("../modules/personalizedOrders/personalizedOrder.route");
 const orderTracking_route_1 = require("../modules/orderTracking/orderTracking.route");
+const address_route_1 = require("../modules/address/address.route");
 const router = (0, express_1.Router)();
 const moduleRoutes = [
     {
@@ -61,6 +62,10 @@ const moduleRoutes = [
     {
         path: "/order-tracking",
         route: orderTracking_route_1.OrderTrackingRoutes,
+    },
+    {
+        path: "/addresses",
+        route: address_route_1.AddressRoutes,
     },
 ];
 moduleRoutes.forEach((route) => router.use(route.path, route.route));

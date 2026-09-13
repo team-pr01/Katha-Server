@@ -72,8 +72,12 @@ const getSingleOrder = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
 }));
 // Get My Orders
 const getMyOrders = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { skip = "0", limit = "10" } = req.query;
-    const result = yield order_service_1.OrderService.getMyOrders(req.user.userId, Number(skip), Number(limit));
+    const { skip = "0", limit = "10", keyword, orderStatus } = req.query;
+    const filters = {
+        keyword: keyword,
+        orderStatus: orderStatus,
+    };
+    const result = yield order_service_1.OrderService.getMyOrders(req.user.userId, Number(skip), Number(limit), filters);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,

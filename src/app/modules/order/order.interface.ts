@@ -35,11 +35,20 @@ export type TOrder = {
         estimatedDelivery?: Date;
     };
     razorpayPaymentId?: string;
+     addedBy : "user" | "admin";
+    confirmedAt?: Date;
+    packedAt?: Date;
+    shippedAt?: Date;
+    deliveredAt?: Date;
+    cancelledAt?: Date;
+    returnedAt?: Date;
+    paidAt?: Date;
     createdAt: Date;
     updatedAt: Date;
 };
 
 export type TOrderFilters = {
+    keyword?: string;
     orderStatus?: string;
     paymentStatus?: string;
     userId?: string;
