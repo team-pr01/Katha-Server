@@ -10,6 +10,7 @@ const categories_route_1 = require("../modules/categories/categories.route");
 const materials_route_1 = require("../modules/materials/materials.route");
 const couponCode_route_1 = require("../modules/couponCode/couponCode.route");
 const order_route_1 = require("../modules/order/order.route");
+const personalizedOrder_route_1 = require("../modules/personalizedOrders/personalizedOrder.route");
 const router = (0, express_1.Router)();
 const moduleRoutes = [
     {
@@ -51,6 +52,10 @@ const moduleRoutes = [
     {
         path: "/order",
         route: order_route_1.OrderRoutes,
+    },
+    {
+        path: "/personalized-order",
+        route: personalizedOrder_route_1.PersonalizedOrderRoutes,
     },
 ];
 moduleRoutes.forEach((route) => router.use(route.path, route.route));

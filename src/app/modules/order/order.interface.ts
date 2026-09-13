@@ -14,7 +14,7 @@ export type TOrder = {
     orderedItems: TOrderItem[];
     totalAmount: number;
     paymentStatus: "pending" | "paid" | "failed" | "refunded";
-    orderStatus: "pending" | "shipped" | "cancelled" | "delivered" | "returned";
+    orderStatus: "pending" | "confirmed" | "processing" | "shipped" | "delivered" | "cancelled" | "returned";
     paymentMethod?: "COD" | "UPI";
     couponCodeId?: ObjectId;
     shippingAddress: {
