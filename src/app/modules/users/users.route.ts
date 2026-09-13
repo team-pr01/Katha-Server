@@ -7,6 +7,12 @@ import { multerUpload } from "../../config/multer.config";
 const router = express.Router();
 
 router.get(
+  "/stats",
+  auth(UserRole.user),
+  UserControllers.getUserStats
+);
+
+router.get(
   "/",
   auth(UserRole.admin),
   UserControllers.getAllUsers
@@ -64,13 +70,6 @@ router.patch(
   "/account/restore/:userId",
   auth(UserRole.admin),
   UserControllers.restoreUsersDeletedAccount
-);
-
-// For admin and moderator only
-router.patch(
-  "/assign-page",
-  auth(UserRole.admin),
-  UserControllers.assignPagesToUser
 );
 
 export const UserRoutes = router;
