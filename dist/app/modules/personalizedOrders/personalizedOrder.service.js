@@ -144,6 +144,54 @@ const updateOrder = (orderId, payload) => __awaiter(void 0, void 0, void 0, func
     const updatedOrder = yield personalizedOrder_model_1.default.findByIdAndUpdate(orderId, payload, { new: true });
     return updatedOrder;
 });
+// Map order status to the corresponding timestamp field
+const orderStatusTimestampMap = {
+    confirmed: "confirmedAt",
+    packed: "packedAt",
+    shipped: "shippedAt",
+    delivered: "deliveredAt",
+    cancelled: "cancelledAt",
+    returned: "returnedAt",
+};
+const paymentStatusTimestampMap = {
+    paid: "paidAt",
+};
+const updateOrderStatus = (orderId, payload) => __awaiter(void 0, void 0, void 0, function* () {
+    const order = yield personalizedOrder_model_1.default.findById(orderId);
+    if (!order) {
+        throw new AppError_1.default(http_status_1.default.NOT_FOUND, "Personalized order not found");
+    }
+    if (!payload || Object.keys(payload).length === 0) {
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, "No fields to update");
+    }
+    if (!payload.orderStatus && !payload.paymentStatus) {
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, "Please provide orderStatus or paymentStatus to update");
+    }
+    const updateData = {};
+    const orderObj = order.toObject();
+    // Handle order status update
+    if (payload.orderStatus) {
+        updateData.orderStatus = payload.orderStatus;
+        const timestampField = orderStatusTimestampMap[payload.orderStatus];
+        console.log("Order status timestamp field:", timestampField);
+        console.log("Existing value:", orderObj[timestampField]);
+        if (timestampField && !orderObj[timestampField]) {
+            updateData[timestampField] = new Date();
+        }
+    }
+    // Handle payment status update
+    if (payload.paymentStatus) {
+        updateData.paymentStatus = payload.paymentStatus;
+        const timestampField = paymentStatusTimestampMap[payload.paymentStatus];
+        console.log("Payment status timestamp field:", timestampField);
+        console.log("Existing value:", orderObj[timestampField]);
+        if (timestampField && !orderObj[timestampField]) {
+            updateData[timestampField] = new Date();
+        }
+    }
+    const updatedOrder = yield personalizedOrder_model_1.default.findByIdAndUpdate(orderId, { $set: updateData }, { new: true, runValidators: true });
+    return updatedOrder;
+});
 // Delete Personalized Order (Delete reference images too)
 const deletePersonalizedOrder = (orderId) => __awaiter(void 0, void 0, void 0, function* () {
     const order = yield personalizedOrder_model_1.default.findById(orderId);
@@ -168,5 +216,6 @@ exports.PersonalizedOrderServices = {
     getSinglePersonalizedOrderById,
     getMyPersonalizedOrders,
     updateOrder,
+    updateOrderStatus,
     deletePersonalizedOrder,
 };

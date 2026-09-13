@@ -184,6 +184,92 @@ const updateOrder = async (orderId: string, payload: any) => {
     return updatedOrder;
 };
 
+interface IUpdateOrderStatusPayload {
+  orderStatus?:
+    | "Pending"
+    | "Confirmed"
+    | "Packed"
+    | "Shipped"
+    | "Delivered"
+    | "Cancelled"
+    | "Returned";
+  paymentStatus?: "Pending" | "Paid" | "Failed" | "Refunded";
+}
+
+// Map order status to the corresponding timestamp field
+const orderStatusTimestampMap: Record<string, string> = {
+  confirmed: "confirmedAt",
+  packed: "packedAt",
+  shipped: "shippedAt",
+  delivered: "deliveredAt",
+  cancelled: "cancelledAt",
+  returned: "returnedAt",
+};
+
+const paymentStatusTimestampMap: Record<string, string> = {
+  paid: "paidAt",
+};
+
+const updateOrderStatus = async (
+  orderId: string,
+  payload: IUpdateOrderStatusPayload
+) => {
+  const order = await PersonalizedOrder.findById(orderId);
+
+  if (!order) {
+    throw new AppError(httpStatus.NOT_FOUND, "Personalized order not found");
+  }
+
+  if (!payload || Object.keys(payload).length === 0) {
+    throw new AppError(httpStatus.BAD_REQUEST, "No fields to update");
+  }
+
+  if (!payload.orderStatus && !payload.paymentStatus) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "Please provide orderStatus or paymentStatus to update"
+    );
+  }
+
+  const updateData: Record<string, any> = {};
+
+  const orderObj = order.toObject() as Record<string, any>;
+
+  // Handle order status update
+  if (payload.orderStatus) {
+    updateData.orderStatus = payload.orderStatus;
+
+    const timestampField = orderStatusTimestampMap[payload.orderStatus];
+    console.log("Order status timestamp field:", timestampField);
+    console.log("Existing value:", orderObj[timestampField]);
+
+    if (timestampField && !orderObj[timestampField]) {
+      updateData[timestampField] = new Date();
+    }
+  }
+
+  // Handle payment status update
+  if (payload.paymentStatus) {
+    updateData.paymentStatus = payload.paymentStatus;
+
+    const timestampField = paymentStatusTimestampMap[payload.paymentStatus];
+    console.log("Payment status timestamp field:", timestampField);
+    console.log("Existing value:", orderObj[timestampField]);
+
+    if (timestampField && !orderObj[timestampField]) {
+      updateData[timestampField] = new Date();
+    }
+  }
+
+  const updatedOrder = await PersonalizedOrder.findByIdAndUpdate(
+    orderId,
+    { $set: updateData },
+    { new: true, runValidators: true }
+  );
+
+  return updatedOrder;
+};
+
 // Delete Personalized Order (Delete reference images too)
 const deletePersonalizedOrder = async (orderId: string) => {
     const order = await PersonalizedOrder.findById(orderId);
@@ -215,5 +301,6 @@ export const PersonalizedOrderServices = {
     getSinglePersonalizedOrderById,
     getMyPersonalizedOrders,
     updateOrder,
+    updateOrderStatus,
     deletePersonalizedOrder,
 };

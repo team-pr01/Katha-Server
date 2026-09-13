@@ -111,6 +111,23 @@ const updateOrder = catchAsync(async (req, res) => {
     });
 });
 
+const updateOrderStatus = catchAsync(async (req, res) => {
+    const { orderId } = req.params;
+    const { orderStatus, paymentStatus } = req.body;
+
+    const result = await PersonalizedOrderServices.updateOrderStatus(orderId, {
+        orderStatus,
+        paymentStatus,
+    });
+
+    sendResponse(res, {
+        statusCode: 200,
+        success: true,
+        message: "Order status updated successfully",
+        data: result,
+    });
+});
+
 // Delete Personalized Order
 const deletePersonalizedOrder = catchAsync(async (req, res) => {
     const { orderId } = req.params;
@@ -131,5 +148,6 @@ export const PersonalizedOrderControllers = {
     getSinglePersonalizedOrderById,
     getMyPersonalizedOrders,
     updateOrder,
+    updateOrderStatus,
     deletePersonalizedOrder,
 };

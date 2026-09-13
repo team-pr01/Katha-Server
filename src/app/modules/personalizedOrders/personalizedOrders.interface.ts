@@ -30,8 +30,17 @@ export type TPersonalizedOrder = {
     deliveryAddress: string;
     userId: ObjectId;
     paymentStatus: "pending" | "paid" | "failed" | "refunded";
-    orderStatus: "pending" | "confirmed" | "processing" | "shipped" | "delivered" | "cancelled" | "returned";
+    orderStatus: "pending" | "confirmed" | "processing" | "packed" | "shipped" | "delivered" | "cancelled" | "returned";
     addedBy : "user" | "admin";
+    confirmedAt?: Date;
+    packedAt?: Date;
+    shippedAt?: Date;
+    deliveredAt?: Date;
+    cancelledAt?: Date;
+    returnedAt?: Date;
+    paidAt?: Date;
+    createdAt: Date;
+    updatedAt: Date;
 };
 
 export type TPersonalizedOrderFilters = {

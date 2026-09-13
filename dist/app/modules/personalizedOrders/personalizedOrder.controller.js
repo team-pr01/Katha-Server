@@ -86,6 +86,20 @@ const updateOrder = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, vo
         data: result,
     });
 }));
+const updateOrderStatus = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { orderId } = req.params;
+    const { orderStatus, paymentStatus } = req.body;
+    const result = yield personalizedOrder_service_1.PersonalizedOrderServices.updateOrderStatus(orderId, {
+        orderStatus,
+        paymentStatus,
+    });
+    (0, sendResponse_1.default)(res, {
+        statusCode: 200,
+        success: true,
+        message: "Order status updated successfully",
+        data: result,
+    });
+}));
 // Delete Personalized Order
 const deletePersonalizedOrder = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { orderId } = req.params;
@@ -103,5 +117,6 @@ exports.PersonalizedOrderControllers = {
     getSinglePersonalizedOrderById,
     getMyPersonalizedOrders,
     updateOrder,
+    updateOrderStatus,
     deletePersonalizedOrder,
 };

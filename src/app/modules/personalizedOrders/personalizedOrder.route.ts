@@ -38,6 +38,12 @@ router.patch(
     PersonalizedOrderControllers.updateOrder
 );
 
+router.patch(
+    "/update-status/:orderId",
+    auth(UserRole.admin),
+    PersonalizedOrderControllers.updateOrderStatus
+);
+
 router.delete(
     "/delete/:orderId",
     auth(UserRole.admin),

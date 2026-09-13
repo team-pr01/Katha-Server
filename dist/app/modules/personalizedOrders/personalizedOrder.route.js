@@ -17,5 +17,6 @@ router.get("/my-orders", (0, auth_1.default)(auth_constants_1.UserRole.user), pe
 router.get("/", (0, auth_1.default)(auth_constants_1.UserRole.admin), personalizedOrder_controller_1.PersonalizedOrderControllers.getAllPersonalizedOrders);
 router.get("/:orderId", (0, auth_1.default)(auth_constants_1.UserRole.admin), personalizedOrder_controller_1.PersonalizedOrderControllers.getSinglePersonalizedOrderById);
 router.patch("/update/:orderId", (0, auth_1.default)(auth_constants_1.UserRole.admin), personalizedOrder_controller_1.PersonalizedOrderControllers.updateOrder);
+router.patch("/update-status/:orderId", (0, auth_1.default)(auth_constants_1.UserRole.admin), personalizedOrder_controller_1.PersonalizedOrderControllers.updateOrderStatus);
 router.delete("/delete/:orderId", (0, auth_1.default)(auth_constants_1.UserRole.admin), personalizedOrder_controller_1.PersonalizedOrderControllers.deletePersonalizedOrder);
 exports.PersonalizedOrderRoutes = router;

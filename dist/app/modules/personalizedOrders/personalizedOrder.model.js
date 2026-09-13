@@ -124,7 +124,7 @@ const personalizedOrderSchema = new mongoose_1.Schema({
     },
     orderStatus: {
         type: String,
-        enum: ["pending", "confirmed", "processing", "shipped", "cancelled", "delivered", "returned"],
+        enum: ["pending", "confirmed", "processing", "packed", "shipped", "cancelled", "delivered", "returned"],
         default: "pending",
         index: true,
     },
@@ -133,6 +133,13 @@ const personalizedOrderSchema = new mongoose_1.Schema({
         enum: ["user", "admin"],
         index: true,
     },
+    confirmedAt: { type: Date, default: null },
+    packedAt: { type: Date, default: null },
+    shippedAt: { type: Date, default: null },
+    deliveredAt: { type: Date, default: null },
+    cancelledAt: { type: Date, default: null },
+    returnedAt: { type: Date, default: null },
+    paidAt: { type: Date, default: null },
 }, {
     timestamps: true,
 });
