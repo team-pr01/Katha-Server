@@ -20,6 +20,8 @@ const auth_model_1 = require("../auth/auth.model");
 const infinitePaginate_1 = require("../../utils/infinitePaginate");
 const deleteImageFromCloudinary_1 = require("../../utils/deleteImageFromCloudinary");
 const sendImageToCloudinary_1 = require("../../utils/sendImageToCloudinary");
+const order_model_1 = __importDefault(require("../order/order.model"));
+const address_model_1 = __importDefault(require("../address/address.model"));
 // import AppError from "../../errors/AppError";
 // import httpStatus from "http-status";
 // import { sendImageToCloudinary } from "../../utils/sendImageToCloudinary";
@@ -118,87 +120,6 @@ const restoreUsersDeletedAccount = (userId) => __awaiter(void 0, void 0, void 0,
         throw new Error("User not found");
     return user;
 });
-// Update tutor profile
-// const updateProfile = async (
-//   userId: string,
-//   payload: Partial<any>,
-//   file: any | undefined
-// ) => {
-//   // ✅ Step 1: Find user and check their role
-//   const user = await User.findById(userId);
-//   if (!user) {
-//     throw new AppError(httpStatus.NOT_FOUND, "User not found");
-//   }
-//   // Determine which model to update
-//   const isTutor = user.role === "tutor";
-//   const isGuardian = user.role === "guardian";
-//   const existing = isTutor
-//     ? await Tutor.findOne({ userId })
-//     : isGuardian
-//       ? await Guardian.findOne({ userId })
-//       : null;
-//   if (!existing) {
-//     throw new AppError(httpStatus.NOT_FOUND, "Profile not found");
-//   }
-//   // ✅ Step 2: Handle image upload
-//   let imageUrl: string | undefined;
-//   if (file) {
-//     const imageName = `${existing.userId}-${Date.now()}`;
-//     const path = file.path;
-//     const { secure_url } = await sendImageToCloudinary(imageName, path);
-//     imageUrl = secure_url;
-//   }
-//   // ✅ Step 3: Split payload for user & role-specific model
-//   const userUpdatePayload: any = {};
-//   const roleUpdatePayload: any = {};
-//   const userFields = ["name", "email", "phoneNumber", "gender", "city", "area"];
-//   Object.entries(payload).forEach(([key, value]) => {
-//     if (userFields.includes(key)) {
-//       userUpdatePayload[key] = value;
-//     } else {
-//       roleUpdatePayload[key] = value;
-//     }
-//   });
-//   if (imageUrl) {
-//     roleUpdatePayload.imageUrl = imageUrl;
-//   }
-//   // ✅ Step 4: Update base User info
-//   if (Object.keys(userUpdatePayload).length > 0) {
-//     await User.findByIdAndUpdate(existing.userId, userUpdatePayload, {
-//       new: true,
-//       runValidators: true,
-//     });
-//   }
-//   // ✅ Step 5: Update either Tutor or Guardian
-//   const updatedProfile = isTutor
-//     ? await Tutor.findOneAndUpdate({ userId }, roleUpdatePayload, {
-//         new: true,
-//         runValidators: true,
-//       }).populate("userId")
-//     : await Guardian.findOneAndUpdate({ userId }, roleUpdatePayload, {
-//         new: true,
-//         runValidators: true,
-//       }).populate("userId");
-//   if (!updatedProfile) {
-//     throw new AppError(httpStatus.NOT_FOUND, "Profile update failed");
-//   }
-//   await updatedProfile.save();
-//   // Saving profile pic in user colletion also
-//   await User.findOneAndUpdate(
-//     { _id: userId },
-//     { profilePicture: imageUrl },
-//     { new: true }
-//   );
-//   return updatedProfile;
-// };
-const assignPagesToUser = (payload) => __awaiter(void 0, void 0, void 0, function* () {
-    const user = yield auth_model_1.User.findById(payload.userId);
-    if (!user) {
-        throw new AppError_1.default(http_status_1.default.NOT_FOUND, "User not found");
-    }
-    const result = yield auth_model_1.User.findByIdAndUpdate(payload.userId, { assignedPages: payload.pages }, { new: true, runValidators: true });
-    return result;
-});
 // Change user role (For admin)
 const saveUserPushToken = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield auth_model_1.User.findById(payload === null || payload === void 0 ? void 0 : payload.userId);
@@ -211,6 +132,85 @@ const saveUserPushToken = (payload) => __awaiter(void 0, void 0, void 0, functio
     });
     return result;
 });
+// Get User Stats
+const getUserStats = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    // Validate user exists
+    const user = yield auth_model_1.User.findById(userId);
+    if (!user) {
+        throw new AppError_1.default(http_status_1.default.NOT_FOUND, "User not found");
+    }
+    // Fetch all counts in parallel
+    const [totalOrders, shippedOrders, deliveredOrders, processingOrders, recentOrders, address,] = yield Promise.all([
+        order_model_1.default.countDocuments({ userId }),
+        order_model_1.default.countDocuments({ userId, orderStatus: "shipped" }),
+        order_model_1.default.countDocuments({ userId, orderStatus: "delivered" }),
+        order_model_1.default.countDocuments({ userId, orderStatus: "pending" }),
+        order_model_1.default.find({ userId })
+            .populate("orderedItems.productId", "name slug variants")
+            .sort({ createdAt: -1 })
+            .limit(3)
+            .lean(),
+        address_model_1.default.findOne({ userId }).lean(),
+    ]);
+    // Enrich recent orders with variant details
+    const enrichedRecentOrders = recentOrders.map((order) => {
+        const enrichedItems = order.orderedItems.map((item) => {
+            const product = item.productId;
+            let variant = null;
+            if (product && product.variants && item.variantId) {
+                variant = product.variants.find((v) => v._id.toString() === item.variantId.toString());
+            }
+            return Object.assign(Object.assign({}, item), { variant: variant
+                    ? {
+                        _id: variant._id,
+                        name: variant.name,
+                        images: variant.images || [],
+                        size: variant.size,
+                        color: variant.color,
+                    }
+                    : null, productId: product
+                    ? {
+                        _id: product._id,
+                        name: product.name,
+                        slug: product.slug,
+                    }
+                    : item.productId });
+        });
+        return {
+            _id: order._id,
+            orderId: order.orderId,
+            totalAmount: order.totalAmount,
+            orderStatus: order.orderStatus,
+            paymentStatus: order.paymentStatus,
+            paymentMethod: order.paymentMethod,
+            itemCount: order.orderedItems.length,
+            orderedItems: enrichedItems,
+            createdAt: order.createdAt,
+        };
+    });
+    // Build user profile
+    const userProfile = {
+        _id: user._id,
+        name: user.name,
+        email: user.email || null,
+        phoneNumber: user.phoneNumber,
+        profilePicture: user.profilePicture || null,
+        memberSince: user.createdAt,
+    };
+    // Build order stats
+    const orderStats = {
+        totalOrders,
+        shipped: shippedOrders,
+        delivered: deliveredOrders,
+        processing: processingOrders,
+    };
+    return {
+        user: userProfile,
+        stats: orderStats,
+        recentOrders: enrichedRecentOrders,
+        deliveryAddress: address || null,
+    };
+});
 exports.UserServices = {
     getAllUsers,
     getMe,
@@ -220,6 +220,6 @@ exports.UserServices = {
     updateProfile,
     deleteAccount,
     restoreUsersDeletedAccount,
-    assignPagesToUser,
-    saveUserPushToken
+    saveUserPushToken,
+    getUserStats
 };

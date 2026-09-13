@@ -112,15 +112,6 @@ const restoreUsersDeletedAccount = (0, catchAsync_1.default)((req, res) => __awa
         data: result,
     });
 }));
-const assignPagesToUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield users_services_1.UserServices.assignPagesToUser(req.body);
-    (0, sendResponse_1.default)(res, {
-        statusCode: http_status_1.default.OK,
-        success: true,
-        message: "Pages assigned successfully.",
-        data: result,
-    });
-}));
 // Save Push Token
 const savePushToken = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield users_services_1.UserServices.saveUserPushToken(req.body);
@@ -128,6 +119,15 @@ const savePushToken = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
         statusCode: http_status_1.default.OK,
         success: true,
         message: "Push token saved successfully",
+        data: result,
+    });
+}));
+const getUserStats = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield users_services_1.UserServices.getUserStats(req.user.userId);
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: "User stats fetched successfully",
         data: result,
     });
 }));
@@ -140,6 +140,6 @@ exports.UserControllers = {
     updateProfile,
     deleteAccount,
     restoreUsersDeletedAccount,
-    assignPagesToUser,
     savePushToken,
+    getUserStats
 };

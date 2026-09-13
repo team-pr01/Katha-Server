@@ -10,6 +10,7 @@ const auth_1 = __importDefault(require("../../middlewares/auth"));
 const auth_constants_1 = require("../auth/auth.constants");
 const multer_config_1 = require("../../config/multer.config");
 const router = express_1.default.Router();
+router.get("/stats", (0, auth_1.default)(auth_constants_1.UserRole.user), users_controller_1.UserControllers.getUserStats);
 router.get("/", (0, auth_1.default)(auth_constants_1.UserRole.admin), users_controller_1.UserControllers.getAllUsers);
 router.get("/me", (0, auth_1.default)(auth_constants_1.UserRole.user, auth_constants_1.UserRole.admin), users_controller_1.UserControllers.getMe);
 router.patch("/suspend/:userId", (0, auth_1.default)(auth_constants_1.UserRole.admin), users_controller_1.UserControllers.suspendUser);
@@ -20,6 +21,4 @@ router.patch("/save-push-token", (0, auth_1.default)(auth_constants_1.UserRole.u
 router.patch("/delete-account", (0, auth_1.default)(auth_constants_1.UserRole.user, auth_constants_1.UserRole.user), users_controller_1.UserControllers.deleteAccount);
 // For admin and moderator only
 router.patch("/account/restore/:userId", (0, auth_1.default)(auth_constants_1.UserRole.admin), users_controller_1.UserControllers.restoreUsersDeletedAccount);
-// For admin and moderator only
-router.patch("/assign-page", (0, auth_1.default)(auth_constants_1.UserRole.admin), users_controller_1.UserControllers.assignPagesToUser);
 exports.UserRoutes = router;
