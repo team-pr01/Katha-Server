@@ -11,6 +11,7 @@ import { OrderRoutes } from "../modules/order/order.route";
 import { PersonalizedOrderRoutes } from "../modules/personalizedOrders/personalizedOrder.route";
 import { OrderTrackingRoutes } from "../modules/orderTracking/orderTracking.route";
 import { AddressRoutes } from "../modules/address/address.route";
+import { HeroRoutes } from "../modules/hero/hero.route";
 
 const router = Router();
 
@@ -66,6 +67,14 @@ const moduleRoutes = [
   {
     path: "/addresses",
     route: AddressRoutes,
+  },
+  {
+    path: "/addresses",
+    route: AddressRoutes,
+  },
+  {
+    path: "/hero",
+    route: HeroRoutes,
   },
 ];
 
