@@ -20,6 +20,7 @@ app.use(express_1.default.urlencoded({ extended: true, limit: "50mb" }));
 app.use((0, cors_1.default)({
     origin: [
         "http://localhost:5173",
+        "https://katha-eosin.vercel.app",
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
