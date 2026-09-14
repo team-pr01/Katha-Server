@@ -39,6 +39,7 @@ const signup = async (payload: TSignupPayload) => {
         phoneNumber: existingUser.phoneNumber,
         email: existingUser.email || "",
         role: existingUser.role,
+        profilePicture: existingUser.profilePicture || "",
       };
 
       const accessToken = createToken(
@@ -97,6 +98,7 @@ const signup = async (payload: TSignupPayload) => {
     phoneNumber: newUser.phoneNumber,
     email: newUser.email || "",
     role: newUser.role,
+    profilePicture: newUser.profilePicture || "",
   };
 
   const accessToken = createToken(
@@ -170,6 +172,7 @@ const loginUser = async (payload: TLoginAuth) => {
     phoneNumber: user.phoneNumber,
     email: user.email || "",
     role: user.role,
+    profilePicture: user.profilePicture,
   };
 
   const accessToken = createToken(
@@ -233,6 +236,7 @@ const refreshToken = async (token: string) => {
     phoneNumber: user.phoneNumber,
     email: user.email || "",
     role: user.role,
+    profilePicture: user.profilePicture,
   };
   
   const accessToken = createToken(
