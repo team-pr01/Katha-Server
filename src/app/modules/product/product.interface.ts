@@ -73,6 +73,7 @@ export type TProduct = {
   isActive: boolean;
   isFeatured?: boolean;
   tags?: string[];
+  isPublished?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 };

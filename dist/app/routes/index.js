@@ -14,6 +14,7 @@ const personalizedOrder_route_1 = require("../modules/personalizedOrders/persona
 const orderTracking_route_1 = require("../modules/orderTracking/orderTracking.route");
 const address_route_1 = require("../modules/address/address.route");
 const hero_route_1 = require("../modules/hero/hero.route");
+const productVariant_route_1 = require("../modules/product/productVariant/productVariant.route");
 const router = (0, express_1.Router)();
 const moduleRoutes = [
     {
@@ -47,6 +48,10 @@ const moduleRoutes = [
     {
         path: "/product",
         route: product_route_1.ProductRoutes,
+    },
+    {
+        path: "/variant",
+        route: productVariant_route_1.ProductVariantRoutes,
     },
     {
         path: "/coupon-code",

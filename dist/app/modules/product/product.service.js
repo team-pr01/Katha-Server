@@ -46,14 +46,23 @@ const materials_model_1 = __importDefault(require("../materials/materials.model"
 const mongoose_1 = __importDefault(require("mongoose"));
 // Helper function to calculate product price range
 const calculatePriceRange = (variants) => {
-    const prices = variants.map(v => v.basePrice);
+    if (!variants || variants.length === 0) {
+        return {
+            minPrice: 0,
+            maxPrice: 0,
+            minDiscountedPrice: undefined,
+        };
+    }
+    const prices = variants.map((v) => v.basePrice);
     const discountedPrices = variants
-        .map(v => v.discountedPrice)
+        .map((v) => v.discountedPrice)
         .filter((p) => p !== undefined && p !== null);
     return {
         minPrice: Math.min(...prices),
         maxPrice: Math.max(...prices),
-        minDiscountedPrice: discountedPrices.length > 0 ? Math.min(...discountedPrices) : undefined,
+        minDiscountedPrice: discountedPrices.length > 0
+            ? Math.min(...discountedPrices)
+            : undefined,
     };
 };
 const addProduct = (payload, files) => __awaiter(void 0, void 0, void 0, function* () {
@@ -79,9 +88,6 @@ const addProduct = (payload, files) => __awaiter(void 0, void 0, void 0, functio
         catch (_a) {
             throw new AppError_1.default(http_status_1.default.BAD_REQUEST, "Invalid variants format");
         }
-    }
-    if (!Array.isArray(variants) || variants.length === 0) {
-        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, "Product must have at least one variant");
     }
     // =========================================================
     // 3. Process Variants
