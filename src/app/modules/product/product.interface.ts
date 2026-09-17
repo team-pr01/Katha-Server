@@ -30,6 +30,8 @@ export type TProductVariant = {
     quantity: number;
     unit: string;
   }[];
+  makingCost: number;
+  processingTime?: string;
 };
 
 export type TReview = {
@@ -50,7 +52,6 @@ export type TProduct = {
   subOccasionNames: string[];
   careInstructions: string[];
   isCustomizationAvailable: boolean;
-  processingTime?: string;
 
   // Variants
   variants: TProductVariant[];
@@ -98,6 +99,8 @@ export type TProductFilters = {
   maxWidth?: number;
   minHeight?: number;
   maxHeight?: number;
+  isPublished?: boolean;
+  isActive ?: boolean;
 };
 
 export type TProductSortOptions = {

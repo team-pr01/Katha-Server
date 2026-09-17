@@ -42,7 +42,7 @@ const addProduct = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, voi
 }));
 /* Get All Products with Filtering and Sorting */
 const getAllProducts = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { category, subCategory, occasionNames, subOccasionNames, material, colors, minPrice, maxPrice, keyword, minRating, inStock, isFeatured, sortBy = 'newest', skip = "0", limit = "10" } = req.query;
+    const { category, subCategory, occasionNames, subOccasionNames, material, colors, minPrice, maxPrice, keyword, minRating, inStock, isFeatured, isPublished, isActive, sortBy = 'newest', skip = "0", limit = "10" } = req.query;
     // Build filters object - Parse arrays from comma-separated strings
     const filters = {
         category: category ? category.split(',').map(c => c.trim()) : undefined,
@@ -57,6 +57,8 @@ const getAllProducts = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
         minRating: minRating ? Number(minRating) : undefined,
         inStock: inStock === 'true' ? true : inStock === 'false' ? false : undefined,
         isFeatured: isFeatured === 'true' ? true : isFeatured === 'false' ? false : undefined,
+        isPublished: isPublished === 'true' ? true : isPublished === 'false' ? false : undefined,
+        isActive: isActive === 'true' ? true : isActive === 'false' ? false : undefined
     };
     // Build sort options
     const sortOption = { field: sortBy };

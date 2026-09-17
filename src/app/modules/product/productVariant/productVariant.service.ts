@@ -95,6 +95,8 @@ const addVariant = async (
         discountedPrice: payload.discountedPrice ? Number(payload.discountedPrice) : undefined,
         bulkPrice: payload.bulkPrice ? Number(payload.bulkPrice) : undefined,
         stock: Number(payload.stock) || 0,
+        makingCost: Number(payload.makingCost) || 0,
+        processingTime: payload.processingTime,
     };
 
     // Push variant and recalculate price range

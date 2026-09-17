@@ -339,7 +339,7 @@ const getAllProducts = (filters_1, ...args_1) => __awaiter(void 0, [filters_1, .
             $in: filters.subOccasionNames.map((name) => new RegExp(`^${name}$`, 'i'))
         };
     }
-    // ✅ CORRECT: Material filter using ObjectId
+    // CORRECT: Material filter using ObjectId
     if (filters.material && filters.material.length > 0) {
         // Convert string IDs to ObjectIds
         const materialObjectIds = filters.material.map((id) => new mongoose_1.default.Types.ObjectId(id));
@@ -384,6 +384,12 @@ const getAllProducts = (filters_1, ...args_1) => __awaiter(void 0, [filters_1, .
     // Featured filter
     if (filters.isFeatured !== undefined) {
         query.isFeatured = filters.isFeatured;
+    }
+    if (filters.isPublished !== undefined) {
+        query.isPublished = filters.isPublished;
+    }
+    if (filters.isActive !== undefined) {
+        query.isActive = filters.isActive;
     }
     // Search filter (text search)
     if (filters.keyword) {

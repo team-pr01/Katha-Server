@@ -124,6 +124,15 @@ const productVariantSchema = new mongoose_1.Schema({
         required: false,
         default: [],
     },
+    makingCost: {
+        type: Number,
+        min: 0,
+        default: 0
+    },
+    processingTime: {
+        type: String,
+        default: null,
+    },
 });
 // Main Product Schema
 const productSchema = new mongoose_1.Schema({
@@ -169,10 +178,6 @@ const productSchema = new mongoose_1.Schema({
     isCustomizationAvailable: {
         type: Boolean,
         default: false,
-    },
-    processingTime: {
-        type: String,
-        default: null,
     },
     // Variants - OPTIONAL
     variants: {

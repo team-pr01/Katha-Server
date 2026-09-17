@@ -36,6 +36,8 @@ const getAllProducts = catchAsync(async (req, res) => {
     minRating,
     inStock,
     isFeatured,
+    isPublished,
+    isActive,
     sortBy = 'newest',
     skip = "0",
     limit = "10"
@@ -55,6 +57,8 @@ const getAllProducts = catchAsync(async (req, res) => {
     minRating: minRating ? Number(minRating) : undefined,
     inStock: inStock === 'true' ? true : inStock === 'false' ? false : undefined,
     isFeatured: isFeatured === 'true' ? true : isFeatured === 'false' ? false : undefined,
+    isPublished: isPublished === 'true' ? true : isPublished === 'false' ? false : undefined,
+    isActive: isActive === 'true' ? true : isActive === 'false' ? false : undefined
   };
 
   // Build sort options

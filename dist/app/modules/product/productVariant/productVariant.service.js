@@ -95,6 +95,8 @@ const addVariant = (productId, payload, files) => __awaiter(void 0, void 0, void
         discountedPrice: payload.discountedPrice ? Number(payload.discountedPrice) : undefined,
         bulkPrice: payload.bulkPrice ? Number(payload.bulkPrice) : undefined,
         stock: Number(payload.stock) || 0,
+        makingCost: Number(payload.makingCost) || 0,
+        processingTime: payload.processingTime,
     };
     // Push variant and recalculate price range
     product.variants.push(newVariant);

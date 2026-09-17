@@ -422,7 +422,7 @@ const getAllProducts = async (
         };
     }
 
-    // ✅ CORRECT: Material filter using ObjectId
+    // CORRECT: Material filter using ObjectId
 if (filters.material && filters.material.length > 0) {
     // Convert string IDs to ObjectIds
     const materialObjectIds = filters.material.map((id: string) => new mongoose.Types.ObjectId(id));
@@ -474,6 +474,13 @@ if (filters.material && filters.material.length > 0) {
     // Featured filter
     if (filters.isFeatured !== undefined) {
         query.isFeatured = filters.isFeatured;
+    }
+
+    if (filters.isPublished !== undefined) {
+        query.isPublished = filters.isPublished;
+    }
+    if (filters.isActive !== undefined) {
+        query.isActive = filters.isActive;
     }
 
     // Search filter (text search)
