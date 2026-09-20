@@ -12,7 +12,7 @@ const multer_config_1 = require("../../../config/multer.config");
 const router = express_1.default.Router({ mergeParams: true });
 // Public routes
 router.get("/product/:productId", productVariant_controller_1.ProductVariantControllers.getAllVariantsOfAProduct);
-router.get("/product/:variantId", productVariant_controller_1.ProductVariantControllers.getSingleVariantOfAProduct);
+router.get("/product/single/:variantId", productVariant_controller_1.ProductVariantControllers.getSingleVariantOfAProduct);
 // Admin routes
 router.post("/add/:productId", (0, auth_1.default)(auth_constants_1.UserRole.admin), multer_config_1.multerUpload.array("files", 10), productVariant_controller_1.ProductVariantControllers.addVariant);
 router.patch("/update/:productId/:variantId", (0, auth_1.default)(auth_constants_1.UserRole.admin), multer_config_1.multerUpload.array("files", 10), productVariant_controller_1.ProductVariantControllers.updateVariant);

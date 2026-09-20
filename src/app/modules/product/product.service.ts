@@ -161,19 +161,19 @@ const addProduct = async (
 
             discountedPrice:
                 variant.discountedPrice !== undefined &&
-                variant.discountedPrice !== null
+                    variant.discountedPrice !== null
                     ? Number(variant.discountedPrice)
                     : undefined,
 
             bulkPrice:
                 variant.bulkPrice !== undefined &&
-                variant.bulkPrice !== null
+                    variant.bulkPrice !== null
                     ? Number(variant.bulkPrice)
                     : undefined,
 
             stock:
                 variant.stock !== undefined &&
-                variant.stock !== null
+                    variant.stock !== null
                     ? Number(variant.stock)
                     : 0,
 
@@ -318,7 +318,7 @@ const addProduct = async (
 
     const processingTime =
         payload.processingTime &&
-        String(payload.processingTime).trim() !== ""
+            String(payload.processingTime).trim() !== ""
             ? payload.processingTime
             : null;
 
@@ -423,14 +423,14 @@ const getAllProducts = async (
     }
 
     // CORRECT: Material filter using ObjectId
-if (filters.material && filters.material.length > 0) {
-    // Convert string IDs to ObjectIds
-    const materialObjectIds = filters.material.map((id: string) => new mongoose.Types.ObjectId(id));
-    
-    query['variants.materials.materialId'] = {
-        $in: materialObjectIds
-    };
-}
+    if (filters.material && filters.material.length > 0) {
+        // Convert string IDs to ObjectIds
+        const materialObjectIds = filters.material.map((id: string) => new mongoose.Types.ObjectId(id));
+
+        query['variants.materials.materialId'] = {
+            $in: materialObjectIds
+        };
+    }
 
     // Color filter - Search in variants.color (singular)
     if (filters.colors && filters.colors.length > 0) {
@@ -842,7 +842,7 @@ const deleteProduct = async (productId: string) => {
 
     // Collect all images from all variants
     const allImages: string[] = [];
-    
+
     if (product.variants && product.variants.length > 0) {
         for (const variant of product.variants) {
             if (variant.images && variant.images.length > 0) {

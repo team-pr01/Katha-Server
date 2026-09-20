@@ -8,7 +8,7 @@ const router = express.Router({ mergeParams: true });
 
 // Public routes
 router.get("/product/:productId", ProductVariantControllers.getAllVariantsOfAProduct);
-router.get("/product/:variantId", ProductVariantControllers.getSingleVariantOfAProduct);
+router.get("/product/single/:variantId", ProductVariantControllers.getSingleVariantOfAProduct);
 
 // Admin routes
 router.post(

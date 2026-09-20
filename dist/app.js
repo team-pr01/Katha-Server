@@ -21,6 +21,8 @@ app.use((0, cors_1.default)({
     origin: [
         "http://localhost:5173",
         "https://katha-eosin.vercel.app",
+        "https://www.kathacelebrations.com",
+        "https://kathacelebrations.com"
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
