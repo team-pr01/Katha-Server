@@ -93,9 +93,9 @@ const getAllCategories = (...args_1) => __awaiter(void 0, [...args_1], void 0, f
     if (filters.areaName) {
         query.areaName = { $regex: new RegExp(`^${filters.areaName}$`, "i") };
     }
-    if (filters.search) {
+    if (filters.keyword) {
         query.$text = {
-            $search: filters.search,
+            $keyword: filters.keyword,
         };
     }
     // Get categories with pagination

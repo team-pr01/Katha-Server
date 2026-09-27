@@ -11,7 +11,7 @@ export type TCategories = {
 };
 
 export type TCategoryFilters = {
-  search?: string;
+  keyword?: string;
   areaName?: string;
   isActive?: boolean;
 };

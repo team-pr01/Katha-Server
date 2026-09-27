@@ -19,10 +19,10 @@ const addCategory = catchAsync(async (req, res) => {
 
 // Get all categories
 const getAllCategories = catchAsync(async (req, res) => {
-  const { search, areaName, isActive, skip = "0", limit = "10" } = req.query;
+  const { keyword, areaName, isActive, skip = "0", limit = "10" } = req.query;
 
   const filters = {
-    search: search as string,
+    keyword: keyword as string,
     areaName: areaName as string,
     isActive: isActive === "true" ? true : isActive === "false" ? false : undefined,
   };

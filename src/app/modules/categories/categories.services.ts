@@ -96,9 +96,9 @@ const getAllCategories = async (
     query.areaName = { $regex: new RegExp(`^${filters.areaName}$`, "i") };
   }
 
-  if (filters.search) {
+  if (filters.keyword) {
     query.$text = {
-      $search: filters.search,
+      $keyword: filters.keyword,
     };
   }
 

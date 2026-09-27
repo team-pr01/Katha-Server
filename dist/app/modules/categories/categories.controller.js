@@ -41,9 +41,9 @@ const addCategory = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, vo
 }));
 // Get all categories
 const getAllCategories = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { search, areaName, isActive, skip = "0", limit = "10" } = req.query;
+    const { keyword, areaName, isActive, skip = "0", limit = "10" } = req.query;
     const filters = {
-        search: search,
+        keyword: keyword,
         areaName: areaName,
         isActive: isActive === "true" ? true : isActive === "false" ? false : undefined,
     };
