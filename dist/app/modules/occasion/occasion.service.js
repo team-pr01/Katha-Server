@@ -171,10 +171,30 @@ const updateOccasion = (occasionId, payload, file, imagesToRemove) => __awaiter(
         const { secure_url } = yield (0, sendImageToCloudinary_1.sendImageToCloudinary)(`occasion-${Date.now()}`, file.path);
         imageUrl = secure_url;
     }
-    // Update sub-occasions if provided
+    // Parse sub-occasions if provided
     let subOccasions = occasion.subOccasions;
-    if (payload.subOccasions) {
-        subOccasions = payload.subOccasions.map((sub) => (Object.assign(Object.assign({}, sub), { _id: sub._id || undefined })));
+    if (payload.subOccasions !== undefined) {
+        let parsed = payload.subOccasions;
+        // If it's a string (from FormData), parse it
+        if (typeof parsed === "string") {
+            try {
+                parsed = JSON.parse(parsed);
+            }
+            catch (_b) {
+                throw new AppError_1.default(http_status_1.default.BAD_REQUEST, "Invalid subOccasions format. Must be a valid JSON array");
+            }
+        }
+        // Ensure it's an array
+        if (!Array.isArray(parsed)) {
+            throw new AppError_1.default(http_status_1.default.BAD_REQUEST, "subOccasions must be an array");
+        }
+        // Clean up each sub-occasion
+        subOccasions = parsed.map((sub) => ({
+            name: sub.name,
+            description: sub.description || "",
+            imageUrl: sub.imageUrl || "",
+            _id: sub._id || undefined,
+        }));
     }
     const updatedOccasion = yield occasion_model_1.default.findByIdAndUpdate(occasionId, Object.assign(Object.assign({}, payload), { imageUrl: imageUrl || payload.imageUrl, subOccasions }), { new: true });
     return updatedOccasion;
