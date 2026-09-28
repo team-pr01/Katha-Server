@@ -11,14 +11,14 @@ router.patch("/update/:materialId", auth(UserRole.admin), MaterialControllers.up
 router.delete("/delete/:materialId", auth(UserRole.admin), MaterialControllers.deleteMaterial);
 
 // Variant routes
-router.post("/:materialId/variants", auth(UserRole.admin), MaterialControllers.addVariant);
+router.post("/:materialId/variant/add", auth(UserRole.admin), MaterialControllers.addVariant);
 router.patch(
-    "/:materialId/variants/:variantIndex",
+    "/:materialId/variant/update/:variantIndex",
     auth(UserRole.admin),
     MaterialControllers.updateVariant
 );
 router.delete(
-    "/:materialId/variants/:variantIndex",
+    "/:materialId/variant/delete/:variantIndex",
     auth(UserRole.admin),
     MaterialControllers.removeVariant
 );

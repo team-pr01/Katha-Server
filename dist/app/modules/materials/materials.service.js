@@ -27,10 +27,6 @@ const addMaterial = (payload) => __awaiter(void 0, void 0, void 0, function* () 
     if (existingMaterial) {
         throw new AppError_1.default(http_status_1.default.CONFLICT, "Material already exists");
     }
-    // Validate variants
-    if (!payload.variants || payload.variants.length === 0) {
-        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, "Material must have at least one variant");
-    }
     const material = yield materials_model_1.default.create(payload);
     return material;
 });

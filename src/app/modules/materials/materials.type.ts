@@ -27,3 +27,6 @@ export type TMaterialFilters = {
     madeOf?: string;
     isActive?: boolean;
 };
+
+
+// Materials will have logs (Price)

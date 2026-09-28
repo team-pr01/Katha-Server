@@ -14,9 +14,9 @@ router.post("/add", (0, auth_1.default)(auth_constants_1.UserRole.admin), materi
 router.patch("/update/:materialId", (0, auth_1.default)(auth_constants_1.UserRole.admin), materials_controller_1.MaterialControllers.updateMaterial);
 router.delete("/delete/:materialId", (0, auth_1.default)(auth_constants_1.UserRole.admin), materials_controller_1.MaterialControllers.deleteMaterial);
 // Variant routes
-router.post("/:materialId/variants", (0, auth_1.default)(auth_constants_1.UserRole.admin), materials_controller_1.MaterialControllers.addVariant);
-router.patch("/:materialId/variants/:variantIndex", (0, auth_1.default)(auth_constants_1.UserRole.admin), materials_controller_1.MaterialControllers.updateVariant);
-router.delete("/:materialId/variants/:variantIndex", (0, auth_1.default)(auth_constants_1.UserRole.admin), materials_controller_1.MaterialControllers.removeVariant);
+router.post("/:materialId/variant/add", (0, auth_1.default)(auth_constants_1.UserRole.admin), materials_controller_1.MaterialControllers.addVariant);
+router.patch("/:materialId/variant/update/:variantIndex", (0, auth_1.default)(auth_constants_1.UserRole.admin), materials_controller_1.MaterialControllers.updateVariant);
+router.delete("/:materialId/variant/delete/:variantIndex", (0, auth_1.default)(auth_constants_1.UserRole.admin), materials_controller_1.MaterialControllers.removeVariant);
 router.get("/", materials_controller_1.MaterialControllers.getAllMaterials);
 router.get("/:materialId", (0, auth_1.default)(auth_constants_1.UserRole.admin), materials_controller_1.MaterialControllers.getSingleMaterial);
 exports.MaterialRoutes = router;

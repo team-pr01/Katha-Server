@@ -16,11 +16,6 @@ const addMaterial = async (payload: TMaterials) => {
         throw new AppError(httpStatus.CONFLICT, "Material already exists");
     }
 
-    // Validate variants
-    if (!payload.variants || payload.variants.length === 0) {
-        throw new AppError(httpStatus.BAD_REQUEST, "Material must have at least one variant");
-    }
-
     const material = await Material.create(payload);
     return material;
 };
