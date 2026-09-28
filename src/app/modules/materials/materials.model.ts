@@ -92,12 +92,6 @@ const materialSchema = new Schema<TMaterials>(
         variants: {
             type: [materialVariantSchema],
             default: [],
-            validate: {
-                validator: function (variants: TMaterialVariant[]) {
-                    return variants.length > 0;
-                },
-                message: "Material must have at least one variant",
-            },
         },
     },
     {

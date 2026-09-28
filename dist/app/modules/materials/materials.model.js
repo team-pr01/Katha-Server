@@ -89,12 +89,6 @@ const materialSchema = new mongoose_1.Schema({
     variants: {
         type: [materialVariantSchema],
         default: [],
-        validate: {
-            validator: function (variants) {
-                return variants.length > 0;
-            },
-            message: "Material must have at least one variant",
-        },
     },
 }, {
     timestamps: true,
