@@ -224,11 +224,37 @@ const updateOccasion = async (
         imageUrl = secure_url;
     }
 
-    // Update sub-occasions if provided
+    // Parse sub-occasions if provided
     let subOccasions = occasion.subOccasions;
-    if (payload.subOccasions) {
-        subOccasions = payload.subOccasions.map((sub) => ({
-            ...sub,
+
+    if (payload.subOccasions !== undefined) {
+        let parsed = payload.subOccasions as any;
+
+        // If it's a string (from FormData), parse it
+        if (typeof parsed === "string") {
+            try {
+                parsed = JSON.parse(parsed);
+            } catch {
+                throw new AppError(
+                    httpStatus.BAD_REQUEST,
+                    "Invalid subOccasions format. Must be a valid JSON array"
+                );
+            }
+        }
+
+        // Ensure it's an array
+        if (!Array.isArray(parsed)) {
+            throw new AppError(
+                httpStatus.BAD_REQUEST,
+                "subOccasions must be an array"
+            );
+        }
+
+        // Clean up each sub-occasion
+        subOccasions = parsed.map((sub: any) => ({
+            name: sub.name,
+            description: sub.description || "",
+            imageUrl: sub.imageUrl || "",
             _id: sub._id || undefined,
         }));
     }
