@@ -37,64 +37,22 @@ const addHero = (payload, file) => __awaiter(void 0, void 0, void 0, function* (
     if (!imageUrl) {
         throw new AppError_1.default(http_status_1.default.BAD_REQUEST, "Hero image is required");
     }
-    // Parse buttons
-    let buttons = payload.buttons || [];
-    if (typeof buttons === "string") {
-        try {
-            buttons = JSON.parse(buttons);
-        }
-        catch (_a) {
-            buttons = [];
-        }
-    }
-    // Parse colors
-    let colors = payload.colors || {};
-    if (typeof colors === "string") {
-        try {
-            colors = JSON.parse(colors);
-        }
-        catch (_b) {
-            colors = {};
-        }
-    }
-    // Auto-assign order if not provided
-    let order = Number(payload.order);
-    if (isNaN(order)) {
-        const lastHero = yield hero_model_1.default.findOne().sort({ order: -1 }).lean();
-        order = lastHero ? lastHero.order + 1 : 0;
-    }
     const hero = yield hero_model_1.default.create({
-        title: payload.title,
-        highlightedTitle: payload.highlightedTitle || "",
-        description: payload.description,
+        alt: payload.alt,
+        link: payload.link,
         image: imageUrl,
-        buttons,
-        colors: {
-            titleColor: colors.titleColor || "#FFFFFF",
-            subtitleColor: colors.subtitleColor || "#F59E0B",
-            descriptionColor: colors.descriptionColor || "#E5E7EB",
-            buttonTextColor: colors.buttonTextColor || "#1F2937",
-        },
-        overlayOpacity: payload.overlayOpacity !== undefined
-            ? Number(payload.overlayOpacity)
-            : 0.5,
-        textAlignment: payload.textAlignment || "left",
-        isActive: payload.isActive !== undefined
-            ? payload.isActive === "true" || payload.isActive === true
-            : true,
-        order,
     });
     return hero;
 });
 // Get All Heroes (Admin - includes inactive)
 const getAllHeroesAdmin = (...args_1) => __awaiter(void 0, [...args_1], void 0, function* (filters = {}, skip = 0, limit = 10) {
     const query = {};
-    if (filters.search) {
-        query.$or = [
-            { title: { $regex: filters.search, $options: "i" } },
-            { highlightedTitle: { $regex: filters.search, $options: "i" } },
-        ];
-    }
+    // if (filters.search) {
+    //     query.$or = [
+    //         { title: { $regex: filters.search, $options: "i" } },
+    //         { highlightedTitle: { $regex: filters.search, $options: "i" } },
+    //     ];
+    // }
     if (filters.isActive !== undefined) {
         query.isActive =
             filters.isActive === "true" || filters.isActive === true;
@@ -141,49 +99,13 @@ const updateHero = (heroId, payload, file) => __awaiter(void 0, void 0, void 0, 
     }
     const updateData = {};
     // Basic fields
-    if (payload.title !== undefined)
-        updateData.title = payload.title;
-    if (payload.highlightedTitle !== undefined)
-        updateData.highlightedTitle = payload.highlightedTitle;
-    if (payload.description !== undefined)
-        updateData.description = payload.description;
-    if (payload.textAlignment !== undefined)
-        updateData.textAlignment = payload.textAlignment;
-    if (payload.overlayOpacity !== undefined) {
-        updateData.overlayOpacity = Number(payload.overlayOpacity);
-    }
+    if (payload.alt !== undefined)
+        updateData.alt = payload.alt;
+    if (payload.link !== undefined)
+        updateData.link = payload.link;
     if (payload.isActive !== undefined) {
         updateData.isActive =
             payload.isActive === "true" || payload.isActive === true;
-    }
-    if (payload.order !== undefined && !isNaN(Number(payload.order))) {
-        updateData.order = Number(payload.order);
-    }
-    // Buttons
-    if (payload.buttons !== undefined) {
-        let buttons = payload.buttons;
-        if (typeof buttons === "string") {
-            try {
-                buttons = JSON.parse(buttons);
-            }
-            catch (_a) {
-                buttons = [];
-            }
-        }
-        updateData.buttons = buttons;
-    }
-    // Colors
-    if (payload.colors !== undefined) {
-        let colors = payload.colors;
-        if (typeof colors === "string") {
-            try {
-                colors = JSON.parse(colors);
-            }
-            catch (_b) {
-                colors = {};
-            }
-        }
-        updateData.colors = colors;
     }
     // Image update
     if (file) {

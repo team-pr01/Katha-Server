@@ -27,55 +27,10 @@ const addHero = async (payload: any, file?: Express.Multer.File) => {
         throw new AppError(httpStatus.BAD_REQUEST, "Hero image is required");
     }
 
-    // Parse buttons
-    let buttons = payload.buttons || [];
-    if (typeof buttons === "string") {
-        try {
-            buttons = JSON.parse(buttons);
-        } catch {
-            buttons = [];
-        }
-    }
-
-    // Parse colors
-    let colors = payload.colors || {};
-    if (typeof colors === "string") {
-        try {
-            colors = JSON.parse(colors);
-        } catch {
-            colors = {};
-        }
-    }
-
-    // Auto-assign order if not provided
-    let order = Number(payload.order);
-    if (isNaN(order)) {
-        const lastHero = await Hero.findOne().sort({ order: -1 }).lean();
-        order = lastHero ? lastHero.order + 1 : 0;
-    }
-
     const hero = await Hero.create({
-        title: payload.title,
-        highlightedTitle: payload.highlightedTitle || "",
-        description: payload.description,
+        alt: payload.alt,
+        link: payload.link,
         image: imageUrl,
-        buttons,
-        colors: {
-            titleColor: colors.titleColor || "#FFFFFF",
-            subtitleColor: colors.subtitleColor || "#F59E0B",
-            descriptionColor: colors.descriptionColor || "#E5E7EB",
-            buttonTextColor: colors.buttonTextColor || "#1F2937",
-        },
-        overlayOpacity:
-            payload.overlayOpacity !== undefined
-                ? Number(payload.overlayOpacity)
-                : 0.5,
-        textAlignment: payload.textAlignment || "left",
-        isActive:
-            payload.isActive !== undefined
-                ? payload.isActive === "true" || payload.isActive === true
-                : true,
-        order,
     });
 
     return hero;
@@ -85,12 +40,12 @@ const addHero = async (payload: any, file?: Express.Multer.File) => {
 const getAllHeroesAdmin = async (filters: any = {}, skip = 0, limit = 10) => {
     const query: any = {};
 
-    if (filters.search) {
-        query.$or = [
-            { title: { $regex: filters.search, $options: "i" } },
-            { highlightedTitle: { $regex: filters.search, $options: "i" } },
-        ];
-    }
+    // if (filters.search) {
+    //     query.$or = [
+    //         { title: { $regex: filters.search, $options: "i" } },
+    //         { highlightedTitle: { $regex: filters.search, $options: "i" } },
+    //     ];
+    // }
 
     if (filters.isActive !== undefined) {
         query.isActive =
@@ -150,51 +105,11 @@ const updateHero = async (
     const updateData: any = {};
 
     // Basic fields
-    if (payload.title !== undefined) updateData.title = payload.title;
-    if (payload.highlightedTitle !== undefined)
-        updateData.highlightedTitle = payload.highlightedTitle;
-    if (payload.description !== undefined)
-        updateData.description = payload.description;
-    if (payload.textAlignment !== undefined)
-        updateData.textAlignment = payload.textAlignment;
-
-    if (payload.overlayOpacity !== undefined) {
-        updateData.overlayOpacity = Number(payload.overlayOpacity);
-    }
-
+    if (payload.alt !== undefined) updateData.alt = payload.alt;
+    if (payload.link !== undefined) updateData.link = payload.link;
     if (payload.isActive !== undefined) {
         updateData.isActive =
             payload.isActive === "true" || payload.isActive === true;
-    }
-
-    if (payload.order !== undefined && !isNaN(Number(payload.order))) {
-        updateData.order = Number(payload.order);
-    }
-
-    // Buttons
-    if (payload.buttons !== undefined) {
-        let buttons = payload.buttons;
-        if (typeof buttons === "string") {
-            try {
-                buttons = JSON.parse(buttons);
-            } catch {
-                buttons = [];
-            }
-        }
-        updateData.buttons = buttons;
-    }
-
-    // Colors
-    if (payload.colors !== undefined) {
-        let colors = payload.colors;
-        if (typeof colors === "string") {
-            try {
-                colors = JSON.parse(colors);
-            } catch {
-                colors = {};
-            }
-        }
-        updateData.colors = colors;
     }
 
     // Image update
