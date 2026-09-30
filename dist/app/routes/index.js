@@ -15,6 +15,7 @@ const orderTracking_route_1 = require("../modules/orderTracking/orderTracking.ro
 const address_route_1 = require("../modules/address/address.route");
 const hero_route_1 = require("../modules/hero/hero.route");
 const productVariant_route_1 = require("../modules/product/productVariant/productVariant.route");
+const materialCategory_route_1 = require("../modules/materials/materialCategory/materialCategory.route");
 const router = (0, express_1.Router)();
 const moduleRoutes = [
     {
@@ -40,6 +41,10 @@ const moduleRoutes = [
     {
         path: "/category",
         route: categories_route_1.CategoryRoutes,
+    },
+    {
+        path: "/material-category",
+        route: materialCategory_route_1.MaterialCategoryRoutes,
     },
     {
         path: "/materials",

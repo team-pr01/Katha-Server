@@ -13,6 +13,7 @@ import { OrderTrackingRoutes } from "../modules/orderTracking/orderTracking.rout
 import { AddressRoutes } from "../modules/address/address.route";
 import { HeroRoutes } from "../modules/hero/hero.route";
 import { ProductVariantRoutes } from "../modules/product/productVariant/productVariant.route";
+import { MaterialCategoryRoutes } from "../modules/materials/materialCategory/materialCategory.route";
 
 const router = Router();
 
@@ -40,6 +41,10 @@ const moduleRoutes = [
   {
     path: "/category",
     route: CategoryRoutes,
+  },
+  {
+    path: "/material-category",
+    route: MaterialCategoryRoutes,
   },
   {
     path: "/materials",
