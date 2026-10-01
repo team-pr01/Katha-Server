@@ -18,4 +18,6 @@ export default {
   smtp_pass: process.env.SMTP_PASS,
   frontend_url: process.env.FRONTEND_URL,
   backend_url: process.env.BACKEND_URL,
+  razorpay_api_key: process.env.RAZORPAY_API_KEY,
+  razorpay_api_secret: process.env.RAZORPAY_API_SECRET,
 };
