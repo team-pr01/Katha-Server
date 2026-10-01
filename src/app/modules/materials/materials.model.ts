@@ -93,6 +93,11 @@ const materialSchema = new Schema<TMaterials>(
             type: [materialVariantSchema],
             default: [],
         },
+        isActive: {
+            type: Boolean,
+            default: true,
+            index: true,
+        }
     },
     {
         timestamps: true,

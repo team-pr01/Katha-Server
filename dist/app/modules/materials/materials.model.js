@@ -90,6 +90,11 @@ const materialSchema = new mongoose_1.Schema({
         type: [materialVariantSchema],
         default: [],
     },
+    isActive: {
+        type: Boolean,
+        default: true,
+        index: true,
+    }
 }, {
     timestamps: true,
 });
