@@ -81,6 +81,7 @@ const addVariant = (productId, payload, files) => __awaiter(void 0, void 0, void
     // Build variant
     const newVariant = {
         name: payload.name,
+        slug: payload.slug,
         description: payload.description,
         design: payload.design,
         size: payload.size,
@@ -178,7 +179,7 @@ const updateVariant = (productId, variantId, payload, files, imagesToRemove) => 
     }
     // Update fields
     const allowedFields = [
-        "name", "description", "design", "size", "color", "packSize",
+        "name", "slug", "description", "design", "size", "color", "packSize",
         "weight", "basePrice", "discountedPrice", "bulkPrice", "stock"
     ];
     for (const field of allowedFields) {
