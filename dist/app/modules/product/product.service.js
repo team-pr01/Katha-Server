@@ -133,7 +133,7 @@ const addProduct = (payload, files) => __awaiter(void 0, void 0, void 0, functio
         // -----------------------------
         return {
             name: variant.name,
-            slug: payload.slug,
+            slug: variant.slug,
             description: variant.description,
             packageContents: Array.isArray(variant.packageContents)
                 ? variant.packageContents
@@ -291,6 +291,7 @@ const addProduct = (payload, files) => __awaiter(void 0, void 0, void 0, functio
     // =========================================================
     const productData = {
         name: payload.name,
+        slug: payload.slug,
         category: payload.category,
         subCategory: payload.subCategory,
         occasionNames,

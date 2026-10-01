@@ -134,7 +134,7 @@ const addProduct = async (
 
         return {
             name: variant.name,
-            slug : payload.slug,
+            slug : variant.slug,
             description: variant.description,
 
             packageContents: Array.isArray(variant.packageContents)
@@ -353,6 +353,7 @@ const addProduct = async (
 
     const productData = {
         name: payload.name,
+        slug: payload.slug,
         category: payload.category,
         subCategory: payload.subCategory,
 

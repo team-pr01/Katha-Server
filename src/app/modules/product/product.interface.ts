@@ -11,6 +11,7 @@ export type TDimensions = {
 
 export type TProductVariant = {
   name: string;
+  slug: string;
   images: string[];
   description: string;
   packageContents: string[];
