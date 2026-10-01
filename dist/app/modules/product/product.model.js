@@ -294,7 +294,8 @@ productSchema.pre("save", function (next) {
 });
 // Pre-save middleware to generate slug
 productSchema.pre("save", function (next) {
-    if (this.isModified("name")) {
+    // Only auto-generate if slug is not provided AND name has changed
+    if (!this.slug && this.isModified("name")) {
         this.slug = (0, slugify_1.default)(this.name, {
             lower: true,
             strict: true,

@@ -133,6 +133,7 @@ const addProduct = (payload, files) => __awaiter(void 0, void 0, void 0, functio
         // -----------------------------
         return {
             name: variant.name,
+            slug: payload.slug,
             description: variant.description,
             packageContents: Array.isArray(variant.packageContents)
                 ? variant.packageContents

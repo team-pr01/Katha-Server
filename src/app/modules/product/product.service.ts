@@ -134,6 +134,7 @@ const addProduct = async (
 
         return {
             name: variant.name,
+            slug : payload.slug,
             description: variant.description,
 
             packageContents: Array.isArray(variant.packageContents)
