@@ -198,7 +198,7 @@ const getAllOrders = async (
 
 // Get Single Order
 const getSingleOrder = async (orderId: string) => {
-    const order = await Order.findOne({ orderId })
+    const order = await Order.findById(orderId)
         .populate("userId", "name email phoneNumber")
         .populate("orderedItems.productId", "name slug images")
         .lean();
@@ -302,59 +302,61 @@ const getMyOrders = async (
 
 // Update Order Status
 const updateOrderStatus = async (
-  orderId: string,
-  orderStatus: TOrder["orderStatus"]
+    orderId: string,
+    orderStatus: TOrder["orderStatus"]
 ) => {
-  const order = await Order.findById(orderId);
+    const order = await Order.findById(orderId);
 
-  if (!order) {
-    throw new AppError(httpStatus.NOT_FOUND, "Order not found");
-  }
-
-  const validTransitions: Record<string, string[]> = {
-    pending: ["shipped", "cancelled"],
-    shipped: ["delivered", "cancelled"],
-    delivered: ["returned"],
-    cancelled: [],
-    returned: [],
-  };
-
-  if (!validTransitions[order.orderStatus]?.includes(orderStatus)) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      `Cannot transition from ${order.orderStatus} to ${orderStatus}`
-    );
-  }
-
-  // If cancelling, restore stock
-  if (orderStatus === "cancelled" && order.orderStatus !== "cancelled") {
-    for (const item of order.orderedItems) {
-      await Product.updateOne(
-        { _id: item.productId, "variants._id": item.variantId },
-        { $inc: { "variants.$.stock": item.quantity } }
-      );
+    if (!order) {
+        throw new AppError(httpStatus.NOT_FOUND, "Order not found");
     }
-  }
 
-  // ─── Auto-mark COD payment as paid on delivery ──────
-  const updateData: Record<string, any> = { orderStatus };
+    const validTransitions: Record<string, string[]> = {
+        pending: ["confirmed", "cancelled"],
+        confirmed: ["processing", "cancelled"],
+        processing: ["shipped", "cancelled"],
+        shipped: ["delivered", "cancelled"],
+        delivered: ["returned"],
+        cancelled: [],
+        returned: [],
+    };
 
-  if (
-    orderStatus === "delivered" &&
-    order.paymentMethod === "COD" &&
-    order.paymentStatus !== "paid"
-  ) {
-    updateData.paymentStatus = "paid";
-    updateData.paidAt = new Date();
-  }
+    if (!validTransitions[order.orderStatus]?.includes(orderStatus)) {
+        throw new AppError(
+            httpStatus.BAD_REQUEST,
+            `Cannot transition from ${order.orderStatus} to ${orderStatus}`
+        );
+    }
 
-  const updatedOrder = await Order.findOneAndUpdate(
-    { orderId },
-    { $set: updateData },
-    { new: true }
-  );
+    // If cancelling, restore stock
+    if (orderStatus === "cancelled" && order.orderStatus !== "cancelled") {
+        for (const item of order.orderedItems) {
+            await Product.updateOne(
+                { _id: item.productId, "variants._id": item.variantId },
+                { $inc: { "variants.$.stock": item.quantity } }
+            );
+        }
+    }
 
-  return updatedOrder;
+    // ─── Auto-mark COD payment as paid on delivery ──────
+    const updateData: Record<string, any> = { orderStatus };
+
+    if (
+        orderStatus === "delivered" &&
+        order.paymentMethod === "COD" &&
+        order.paymentStatus !== "paid"
+    ) {
+        updateData.paymentStatus = "paid";
+        updateData.paidAt = new Date();
+    }
+
+    const updatedOrder = await Order.findOneAndUpdate(
+        { orderId },
+        { $set: updateData },
+        { new: true }
+    );
+
+    return updatedOrder;
 };
 
 // Update Payment Status
@@ -379,7 +381,7 @@ const updatePaymentStatus = async (
 
 // Delete Order
 const deleteOrder = async (orderId: string) => {
-    const order = await Order.findOne({ orderId });
+    const order = await Order.findById(orderId);
 
     if (!order) {
         throw new AppError(httpStatus.NOT_FOUND, "Order not found");
@@ -395,7 +397,7 @@ const deleteOrder = async (orderId: string) => {
         }
     }
 
-    await Order.findOneAndDelete({ orderId });
+    await Order.findByIdAndDelete(orderId);
 
     return true;
 };

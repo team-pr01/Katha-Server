@@ -170,7 +170,7 @@ const getAllOrders = (...args_1) => __awaiter(void 0, [...args_1], void 0, funct
 });
 // Get Single Order
 const getSingleOrder = (orderId) => __awaiter(void 0, void 0, void 0, function* () {
-    const order = yield order_model_1.default.findOne({ orderId })
+    const order = yield order_model_1.default.findById(orderId)
         .populate("userId", "name email phoneNumber")
         .populate("orderedItems.productId", "name slug images")
         .lean();
@@ -254,7 +254,9 @@ const updateOrderStatus = (orderId, orderStatus) => __awaiter(void 0, void 0, vo
         throw new AppError_1.default(http_status_1.default.NOT_FOUND, "Order not found");
     }
     const validTransitions = {
-        pending: ["shipped", "cancelled"],
+        pending: ["confirmed", "cancelled"],
+        confirmed: ["processing", "cancelled"],
+        processing: ["shipped", "cancelled"],
         shipped: ["delivered", "cancelled"],
         delivered: ["returned"],
         cancelled: [],
@@ -291,7 +293,7 @@ const updatePaymentStatus = (orderId, paymentStatus) => __awaiter(void 0, void 0
 });
 // Delete Order
 const deleteOrder = (orderId) => __awaiter(void 0, void 0, void 0, function* () {
-    const order = yield order_model_1.default.findOne({ orderId });
+    const order = yield order_model_1.default.findById(orderId);
     if (!order) {
         throw new AppError_1.default(http_status_1.default.NOT_FOUND, "Order not found");
     }
@@ -301,7 +303,7 @@ const deleteOrder = (orderId) => __awaiter(void 0, void 0, void 0, function* () 
             yield product_model_1.default.updateOne({ _id: item.productId, "variants._id": item.variantId }, { $inc: { "variants.$.stock": item.quantity } });
         }
     }
-    yield order_model_1.default.findOneAndDelete({ orderId });
+    yield order_model_1.default.findByIdAndDelete(orderId);
     return true;
 });
 exports.OrderService = {
