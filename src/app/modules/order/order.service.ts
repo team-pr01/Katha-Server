@@ -305,7 +305,7 @@ const updateOrderStatus = async (
   orderId: string,
   orderStatus: TOrder["orderStatus"]
 ) => {
-  const order = await Order.findOne({ orderId });
+  const order = await Order.findById(orderId);
 
   if (!order) {
     throw new AppError(httpStatus.NOT_FOUND, "Order not found");
