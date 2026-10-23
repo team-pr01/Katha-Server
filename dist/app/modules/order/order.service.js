@@ -269,7 +269,15 @@ const updateOrderStatus = (orderId, orderStatus) => __awaiter(void 0, void 0, vo
             yield product_model_1.default.updateOne({ _id: item.productId, "variants._id": item.variantId }, { $inc: { "variants.$.stock": item.quantity } });
         }
     }
-    const updatedOrder = yield order_model_1.default.findOneAndUpdate({ orderId }, { orderStatus }, { new: true });
+    // ─── Auto-mark COD payment as paid on delivery ──────
+    const updateData = { orderStatus };
+    if (orderStatus === "delivered" &&
+        order.paymentMethod === "COD" &&
+        order.paymentStatus !== "paid") {
+        updateData.paymentStatus = "paid";
+        updateData.paidAt = new Date();
+    }
+    const updatedOrder = yield order_model_1.default.findOneAndUpdate({ orderId }, { $set: updateData }, { new: true });
     return updatedOrder;
 });
 // Update Payment Status

@@ -302,47 +302,59 @@ const getMyOrders = async (
 
 // Update Order Status
 const updateOrderStatus = async (
-    orderId: string,
-    orderStatus: TOrder["orderStatus"]
+  orderId: string,
+  orderStatus: TOrder["orderStatus"]
 ) => {
-    const order = await Order.findOne({ orderId });
+  const order = await Order.findOne({ orderId });
 
-    if (!order) {
-        throw new AppError(httpStatus.NOT_FOUND, "Order not found");
-    }
+  if (!order) {
+    throw new AppError(httpStatus.NOT_FOUND, "Order not found");
+  }
 
-    const validTransitions: Record<string, string[]> = {
-        pending: ["shipped", "cancelled"],
-        shipped: ["delivered", "cancelled"],
-        delivered: ["returned"],
-        cancelled: [],
-        returned: [],
-    };
+  const validTransitions: Record<string, string[]> = {
+    pending: ["shipped", "cancelled"],
+    shipped: ["delivered", "cancelled"],
+    delivered: ["returned"],
+    cancelled: [],
+    returned: [],
+  };
 
-    if (!validTransitions[order.orderStatus]?.includes(orderStatus)) {
-        throw new AppError(
-            httpStatus.BAD_REQUEST,
-            `Cannot transition from ${order.orderStatus} to ${orderStatus}`
-        );
-    }
-
-    // If cancelling, restore stock
-    if (orderStatus === "cancelled" && order.orderStatus !== "cancelled") {
-        for (const item of order.orderedItems) {
-            await Product.updateOne(
-                { _id: item.productId, "variants._id": item.variantId },
-                { $inc: { "variants.$.stock": item.quantity } }
-            );
-        }
-    }
-
-    const updatedOrder = await Order.findOneAndUpdate(
-        { orderId },
-        { orderStatus },
-        { new: true }
+  if (!validTransitions[order.orderStatus]?.includes(orderStatus)) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      `Cannot transition from ${order.orderStatus} to ${orderStatus}`
     );
+  }
 
-    return updatedOrder;
+  // If cancelling, restore stock
+  if (orderStatus === "cancelled" && order.orderStatus !== "cancelled") {
+    for (const item of order.orderedItems) {
+      await Product.updateOne(
+        { _id: item.productId, "variants._id": item.variantId },
+        { $inc: { "variants.$.stock": item.quantity } }
+      );
+    }
+  }
+
+  // ─── Auto-mark COD payment as paid on delivery ──────
+  const updateData: Record<string, any> = { orderStatus };
+
+  if (
+    orderStatus === "delivered" &&
+    order.paymentMethod === "COD" &&
+    order.paymentStatus !== "paid"
+  ) {
+    updateData.paymentStatus = "paid";
+    updateData.paidAt = new Date();
+  }
+
+  const updatedOrder = await Order.findOneAndUpdate(
+    { orderId },
+    { $set: updateData },
+    { new: true }
+  );
+
+  return updatedOrder;
 };
 
 // Update Payment Status
