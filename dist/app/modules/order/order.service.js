@@ -150,11 +150,14 @@ const getAllOrders = (...args_1) => __awaiter(void 0, [...args_1], void 0, funct
         if (filters.endDate)
             query.createdAt.$lte = filters.endDate;
     }
-    // ✅ Search across customer details using $regex
+    // ✅ Search across orderId AND customer details
     if (filters.keyword) {
-        const regex = new RegExp(escapeRegExp(filters.keyword), "i");
+        const rawKeyword = filters.keyword.trim();
+        const regex = new RegExp(escapeRegExp(rawKeyword), "i");
         query.$or = [
+            // 1. Exact match or partial match on custom Order ID (e.g., "K-011026-00023")
             { orderId: regex },
+            // 2. Partial match on customer details
             { "shippingAddress.firstName": regex },
             { "shippingAddress.lastName": regex },
             { "shippingAddress.email": regex },

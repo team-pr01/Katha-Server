@@ -147,76 +147,79 @@ const verifyPayment = async (orderId: string, razorpayPaymentId: string) => {
 };
 
 // Get All Orders
-
 const escapeRegExp = (string: string) => {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 };
 
 const getAllOrders = async (
-    filters: TOrderFilters = {},
-    skip = 0,
-    limit = 10
+  filters: TOrderFilters = {},
+  skip = 0,
+  limit = 10
 ) => {
-    const query: any = {};
+  const query: any = {};
 
-    if (filters.userId) {
-        query.userId = filters.userId;
-    }
+  if (filters.userId) {
+    query.userId = filters.userId;
+  }
 
-    if (filters.orderStatus && filters.orderStatus !== "all") {
-        query.orderStatus = filters.orderStatus;
-    }
+  if (filters.orderStatus && filters.orderStatus !== "all") {
+    query.orderStatus = filters.orderStatus;
+  }
 
-    if (filters.paymentStatus && filters.paymentStatus !== "all") {
-        query.paymentStatus = filters.paymentStatus;
-    }
+  if (filters.paymentStatus && filters.paymentStatus !== "all") {
+    query.paymentStatus = filters.paymentStatus;
+  }
 
-    if (filters.startDate || filters.endDate) {
-        query.createdAt = {};
-        if (filters.startDate) query.createdAt.$gte = filters.startDate;
-        if (filters.endDate) query.createdAt.$lte = filters.endDate;
-    }
+  if (filters.startDate || filters.endDate) {
+    query.createdAt = {};
+    if (filters.startDate) query.createdAt.$gte = filters.startDate;
+    if (filters.endDate) query.createdAt.$lte = filters.endDate;
+  }
 
-    // ✅ Search across customer details using $regex
-    if (filters.keyword) {
-        const regex = new RegExp(escapeRegExp(filters.keyword), "i");
+  // ✅ Search across orderId AND customer details
+  if (filters.keyword) {
+    const rawKeyword = filters.keyword.trim();
+    const regex = new RegExp(escapeRegExp(rawKeyword), "i");
+    
+    query.$or = [
+      // 1. Exact match or partial match on custom Order ID (e.g., "K-011026-00023")
+      { orderId: regex },
+      
+      // 2. Partial match on customer details
+      { "shippingAddress.firstName": regex },
+      { "shippingAddress.lastName": regex },
+      { "shippingAddress.email": regex },
+      { "shippingAddress.phoneNumber": regex },
+      { "shippingAddress.city": regex },
+      { "shippingAddress.state": regex },
+      { "shippingAddress.pinCode": regex },
+      { "shippingAddress.addressLine1": regex },
+      { "shippingAddress.addressLine2": regex },
+    ];
+  }
 
-        query.$or = [
-            { orderId: regex },
-            { "shippingAddress.firstName": regex },
-            { "shippingAddress.lastName": regex },
-            { "shippingAddress.email": regex },
-            { "shippingAddress.phoneNumber": regex },
-            { "shippingAddress.city": regex },
-            { "shippingAddress.state": regex },
-            { "shippingAddress.pinCode": regex },
-            { "shippingAddress.addressLine1": regex },
-            { "shippingAddress.addressLine2": regex },
-        ];
-    }
+  const total = await Order.countDocuments(query);
 
-    const total = await Order.countDocuments(query);
+  const orders = await Order.find(query)
+    .populate("userId", "name email phoneNumber")
+    .populate("orderedItems.productId", "name slug images")
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
+    .lean();
 
-    const orders = await Order.find(query)
-        .populate("userId", "name email phoneNumber")
-        .populate("orderedItems.productId", "name slug images")
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean();
-
-    return {
-        data: orders,
-        meta: {
-            total,
-            filteredTotal: total,
-            skip,
-            limit,
-            totalPages: Math.ceil(total / limit),
-            currentPage: Math.floor(skip / limit) + 1,
-            hasMore: skip + limit < total,
-        },
-    };
+  return {
+    data: orders,
+    meta: {
+      total,
+      filteredTotal: total,
+      skip,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      currentPage: Math.floor(skip / limit) + 1,
+      hasMore: skip + limit < total,
+    },
+  };
 };
 
 // Get Single Order
