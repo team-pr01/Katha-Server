@@ -350,7 +350,7 @@ const updateOrderStatus = async (
         updateData.paidAt = new Date();
     }
 
-    const updatedOrder = await Order.findOneAndUpdate(
+    const updatedOrder = await Order.findByIdAndUpdate(
         { orderId },
         { $set: updateData },
         { new: true }

@@ -279,7 +279,7 @@ const updateOrderStatus = (orderId, orderStatus) => __awaiter(void 0, void 0, vo
         updateData.paymentStatus = "paid";
         updateData.paidAt = new Date();
     }
-    const updatedOrder = yield order_model_1.default.findOneAndUpdate({ orderId }, { $set: updateData }, { new: true });
+    const updatedOrder = yield order_model_1.default.findByIdAndUpdate({ orderId }, { $set: updateData }, { new: true });
     return updatedOrder;
 });
 // Update Payment Status
