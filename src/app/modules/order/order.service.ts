@@ -255,27 +255,27 @@ const getMyOrders = async (
                 ...item,
                 variant: variant
                     ? {
-                          _id: variant._id,
-                          name: variant.name,
-                          images: variant.images || [],
-                          description: variant.description,
-                          design: variant.design,
-                          size: variant.size,
-                          color: variant.color,
-                          packSize: variant.packSize,
-                          weight: variant.weight,
-                          basePrice: variant.basePrice,
-                          discountedPrice: variant.discountedPrice,
-                          bulkPrice: variant.bulkPrice,
-                      }
+                        _id: variant._id,
+                        name: variant.name,
+                        images: variant.images || [],
+                        description: variant.description,
+                        design: variant.design,
+                        size: variant.size,
+                        color: variant.color,
+                        packSize: variant.packSize,
+                        weight: variant.weight,
+                        basePrice: variant.basePrice,
+                        discountedPrice: variant.discountedPrice,
+                        bulkPrice: variant.bulkPrice,
+                    }
                     : null,
                 // Keep product with limited fields
                 productId: product
                     ? {
-                          _id: product._id,
-                          name: product.name,
-                          slug: product.slug,
-                      }
+                        _id: product._id,
+                        name: product.name,
+                        slug: product.slug,
+                    }
                     : item.productId,
             };
         });
@@ -350,7 +350,7 @@ const updatePaymentStatus = async (
     orderId: string,
     paymentStatus: TOrder["paymentStatus"]
 ) => {
-    const order = await Order.findOne({ orderId });
+    const order = await Order.findById(orderId);
 
     if (!order) {
         throw new AppError(httpStatus.NOT_FOUND, "Order not found");

@@ -274,7 +274,7 @@ const updateOrderStatus = (orderId, orderStatus) => __awaiter(void 0, void 0, vo
 });
 // Update Payment Status
 const updatePaymentStatus = (orderId, paymentStatus) => __awaiter(void 0, void 0, void 0, function* () {
-    const order = yield order_model_1.default.findOne({ orderId });
+    const order = yield order_model_1.default.findById(orderId);
     if (!order) {
         throw new AppError_1.default(http_status_1.default.NOT_FOUND, "Order not found");
     }
