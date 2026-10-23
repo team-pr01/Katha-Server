@@ -44,6 +44,7 @@ const getAllOrders = catchAsync(async (req, res) => {
     } = req.query;
 
     const filters = {
+        keyword: req.query.keyword as string,
         orderStatus: orderStatus as string,
         paymentStatus: paymentStatus as string,
         userId: userId as string,
@@ -103,6 +104,22 @@ const getMyOrders = catchAsync(async (req, res) => {
     });
 });
 
+const getOrderStats = catchAsync(async (req, res) => {
+  // Get month and year from query, fallback to current
+  const currentDate = new Date();
+  const month = req.query.month ? parseInt(req.query.month as string) : currentDate.getMonth() + 1;
+  const year = req.query.year ? parseInt(req.query.year as string) : currentDate.getFullYear();
+
+  const result = await OrderService.getOrderStats(month, year);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Order statistics fetched successfully",
+    data: result,
+  });
+});
+
 // Update Order Status
 const updateOrderStatus = catchAsync(async (req, res) => {
     const { orderId } = req.params;
@@ -153,6 +170,7 @@ export const OrderController = {
     getAllOrders,
     getSingleOrder,
     getMyOrders,
+    getOrderStats,
     updateOrderStatus,
     updatePaymentStatus,
     deleteOrder,

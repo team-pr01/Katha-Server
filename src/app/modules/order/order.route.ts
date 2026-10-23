@@ -12,6 +12,11 @@ router.get("/my-orders", auth(UserRole.user), OrderController.getMyOrders);
 
 // Admin routes
 router.get("/", auth(UserRole.admin), OrderController.getAllOrders);
+router.get(
+  "/stats",
+  auth(UserRole.admin),
+  OrderController.getOrderStats
+);
 router.get("/:orderId", auth(UserRole.admin), OrderController.getSingleOrder);
 router.patch("/status/:orderId", auth(UserRole.admin), OrderController.updateOrderStatus);
 router.patch("/payment-status/:orderId", auth(UserRole.admin), OrderController.updatePaymentStatus);

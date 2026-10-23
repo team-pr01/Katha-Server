@@ -148,80 +148,80 @@ const verifyPayment = async (orderId: string, razorpayPaymentId: string) => {
 
 // Get All Orders
 const escapeRegExp = (string: string) => {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 };
 
 const getAllOrders = async (
-  filters: TOrderFilters = {},
-  skip = 0,
-  limit = 10
+    filters: TOrderFilters = {},
+    skip = 0,
+    limit = 10
 ) => {
-  const query: any = {};
+    console.log("Filters received in service:", filters); // 👈 Debug log
 
-  if (filters.userId) {
-    query.userId = filters.userId;
-  }
+    const query: any = {};
 
-  if (filters.orderStatus && filters.orderStatus !== "all") {
-    query.orderStatus = filters.orderStatus;
-  }
+    if (filters.userId) {
+        query.userId = filters.userId;
+    }
 
-  if (filters.paymentStatus && filters.paymentStatus !== "all") {
-    query.paymentStatus = filters.paymentStatus;
-  }
+    if (filters.orderStatus && filters.orderStatus !== "all") {
+        query.orderStatus = filters.orderStatus;
+    }
 
-  if (filters.startDate || filters.endDate) {
-    query.createdAt = {};
-    if (filters.startDate) query.createdAt.$gte = filters.startDate;
-    if (filters.endDate) query.createdAt.$lte = filters.endDate;
-  }
+    if (filters.paymentStatus && filters.paymentStatus !== "all") {
+        query.paymentStatus = filters.paymentStatus;
+    }
 
-  // ✅ Search across orderId AND customer details
-  if (filters.keyword) {
-    const rawKeyword = filters.keyword.trim();
-    const regex = new RegExp(escapeRegExp(rawKeyword), "i");
-    
-    query.$or = [
-      // 1. Exact match or partial match on custom Order ID (e.g., "K-011026-00023")
-      { orderId: regex },
-      
-      // 2. Partial match on customer details
-      { "shippingAddress.firstName": regex },
-      { "shippingAddress.lastName": regex },
-      { "shippingAddress.email": regex },
-      { "shippingAddress.phoneNumber": regex },
-      { "shippingAddress.city": regex },
-      { "shippingAddress.state": regex },
-      { "shippingAddress.pinCode": regex },
-      { "shippingAddress.addressLine1": regex },
-      { "shippingAddress.addressLine2": regex },
-    ];
-  }
+    if (filters.startDate || filters.endDate) {
+        query.createdAt = {};
+        if (filters.startDate) query.createdAt.$gte = filters.startDate;
+        if (filters.endDate) query.createdAt.$lte = filters.endDate;
+    }
 
-  const total = await Order.countDocuments(query);
+    // ✅ Search across orderId AND customer details
+    if (filters.keyword) {
+        const rawKeyword = String(filters.keyword).trim(); // Safe cast
+        const regex = new RegExp(escapeRegExp(rawKeyword), "i");
 
-  const orders = await Order.find(query)
-    .populate("userId", "name email phoneNumber")
-    .populate("orderedItems.productId", "name slug images")
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(limit)
-    .lean();
+        query.$or = [
+            { orderId: regex },
+            { "shippingAddress.firstName": regex },
+            { "shippingAddress.lastName": regex },
+            { "shippingAddress.email": regex },
+            { "shippingAddress.phoneNumber": regex },
+            { "shippingAddress.city": regex },
+            { "shippingAddress.state": regex },
+            { "shippingAddress.pinCode": regex },
+            { "shippingAddress.addressLine1": regex },
+            { "shippingAddress.addressLine2": regex },
+        ];
+    }
 
-  return {
-    data: orders,
-    meta: {
-      total,
-      filteredTotal: total,
-      skip,
-      limit,
-      totalPages: Math.ceil(total / limit),
-      currentPage: Math.floor(skip / limit) + 1,
-      hasMore: skip + limit < total,
-    },
-  };
+    console.log("MongoDB Query:", JSON.stringify(query, null, 2)); // 👈 Debug log
+
+    const total = await Order.countDocuments(query);
+
+    const orders = await Order.find(query)
+        .populate("userId", "name email phoneNumber")
+        .populate("orderedItems.productId", "name slug images")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean();
+
+    return {
+        data: orders,
+        meta: {
+            total,
+            filteredTotal: total,
+            skip,
+            limit,
+            totalPages: Math.ceil(total / limit),
+            currentPage: Math.floor(skip / limit) + 1,
+            hasMore: skip + limit < total,
+        },
+    };
 };
-
 // Get Single Order
 const getSingleOrder = async (orderId: string) => {
     const order = await Order.findById(orderId)
@@ -326,6 +326,188 @@ const getMyOrders = async (
     };
 };
 
+const getOrderStats = async (month: number, year: number) => {
+  // Calculate Start and End of the SELECTED Month
+  const startOfSelectedMonth = new Date(year, month - 1, 1);
+  const endOfSelectedMonth = new Date(year, month, 0, 23, 59, 59, 999);
+
+  // Calculate Start and End of the PREVIOUS Month (relative to selected)
+  const startOfPrevMonth = new Date(year, month - 2, 1);
+  const endOfPrevMonth = new Date(year, month - 1, 0, 23, 59, 59, 999);
+
+  // Calculate Today and Last Week relative to REAL current time
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfLastWeek = new Date(now);
+  startOfLastWeek.setDate(now.getDate() - 7);
+
+  // ─── 1. OVERALL (ALL-TIME) STATS ─────────────────────
+  const overallStatsData = await Order.aggregate([
+    {
+      $facet: {
+        statusCounts: [
+          { $group: { _id: "$orderStatus", count: { $sum: 1 } } }
+        ],
+        paymentCounts: [
+          { $group: { _id: "$paymentStatus", count: { $sum: 1 } } }
+        ],
+        totalRevenue: [
+          { $match: { orderStatus: "delivered" } },
+          { $group: { _id: null, total: { $sum: "$totalAmount" } } }
+        ],
+        totalOrders: [
+          { $count: "count" }
+        ]
+      }
+    }
+  ]);
+
+  const overallStatusCounts: Record<string, number> = {
+    pending: 0, confirmed: 0, processing: 0, shipped: 0,
+    delivered: 0, cancelled: 0, returned: 0
+  };
+  overallStatsData[0].statusCounts.forEach((s: any) => {
+    if (s._id) overallStatusCounts[s._id] = s.count;
+  });
+
+  const overallPaymentCounts: Record<string, number> = {
+    pending: 0, paid: 0, failed: 0, refunded: 0
+  };
+  overallStatsData[0].paymentCounts.forEach((p: any) => {
+    if (p._id) overallPaymentCounts[p._id] = p.count;
+  });
+
+  const overallRevenue = overallStatsData[0].totalRevenue[0]?.total || 0;
+  const overallOrders = overallStatsData[0].totalOrders[0]?.count || 0;
+  const overallAvgOrderValue = overallOrders > 0 ? Math.round(overallRevenue / overallOrders) : 0;
+
+  // ─── 2. SELECTED MONTH STATS ─────────────────────────
+  const monthlyStatsData = await Order.aggregate([
+    {
+      $match: {
+        createdAt: { $gte: startOfSelectedMonth, $lte: endOfSelectedMonth },
+      },
+    },
+    {
+      $facet: {
+        statusCounts: [
+          { $group: { _id: "$orderStatus", count: { $sum: 1 } } }
+        ],
+        paymentCounts: [
+          { $group: { _id: "$paymentStatus", count: { $sum: 1 } } }
+        ],
+        totalRevenue: [
+          { $match: { orderStatus: "delivered" } },
+          { $group: { _id: null, total: { $sum: "$totalAmount" } } }
+        ],
+        totalOrders: [
+          { $count: "count" }
+        ]
+      }
+    }
+  ]);
+
+  const monthlyStatusCounts: Record<string, number> = {
+    pending: 0, confirmed: 0, processing: 0, shipped: 0,
+    delivered: 0, cancelled: 0, returned: 0
+  };
+  monthlyStatsData[0].statusCounts.forEach((s: any) => {
+    if (s._id) monthlyStatusCounts[s._id] = s.count;
+  });
+
+  const monthlyPaymentCounts: Record<string, number> = {
+    pending: 0, paid: 0, failed: 0, refunded: 0
+  };
+  monthlyStatsData[0].paymentCounts.forEach((p: any) => {
+    if (p._id) monthlyPaymentCounts[p._id] = p.count;
+  });
+
+  const monthlyRevenue = monthlyStatsData[0].totalRevenue[0]?.total || 0;
+  const monthlyOrders = monthlyStatsData[0].totalOrders[0]?.count || 0;
+  const monthlyAvgOrderValue = monthlyOrders > 0 ? Math.round(monthlyRevenue / monthlyOrders) : 0;
+
+  // ─── 3. Time-based Stats helper ──────────────────────
+  const getStatsForPeriod = async (startDate: Date, endDate?: Date) => {
+    const matchStage: any = { createdAt: { $gte: startDate } };
+    if (endDate) matchStage.createdAt.$lte = endDate;
+
+    const stats = await Order.aggregate([
+      { $match: matchStage },
+      {
+        $facet: {
+          revenue: [
+            { $match: { orderStatus: "delivered" } },
+            { $group: { _id: null, total: { $sum: "$totalAmount" } } }
+          ],
+          orders: [{ $count: "count" }]
+        }
+      }
+    ]);
+
+    return {
+      revenue: stats[0].revenue[0]?.total || 0,
+      orders: stats[0].orders[0]?.count || 0,
+    };
+  };
+
+  const todayStats = await getStatsForPeriod(startOfToday);
+  const thisWeekStats = await getStatsForPeriod(startOfLastWeek);
+  const thisMonthStats = await getStatsForPeriod(startOfSelectedMonth, endOfSelectedMonth);
+  const lastMonthStats = await getStatsForPeriod(startOfPrevMonth, endOfPrevMonth);
+
+  // ─── 4. Monthly Revenue Comparison (Last 6 months) ───
+  const startOf12MonthsAgo = new Date(year, month - 12, 1);
+  const monthlyRevenueChart = await Order.aggregate([
+    {
+      $match: {
+        orderStatus: "delivered",
+        createdAt: { $gte: startOf12MonthsAgo, $lte: endOfSelectedMonth },
+      }
+    },
+    {
+      $group: {
+        _id: { month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
+        revenue: { $sum: "$totalAmount" }
+      }
+    },
+    { $sort: { "_id.year": 1, "_id.month": 1 } }
+  ]);
+
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const revenueComparison = monthlyRevenueChart.map((item) => ({
+    month: `${monthNames[item._id.month - 1]} ${item._id.year}`,
+    revenue: item.revenue,
+  }));
+
+  // ─── 5. Final Response ───────────────────────────────
+  return {
+    // All-time data
+    overall: {
+      totalOrders: overallOrders,
+      totalRevenue: overallRevenue,
+      avgOrderValue: overallAvgOrderValue,
+      statusCounts: overallStatusCounts,
+      paymentCounts: overallPaymentCounts,
+    },
+    // Selected month data
+    monthly: {
+      totalOrders: monthlyOrders,
+      totalRevenue: monthlyRevenue,
+      avgOrderValue: monthlyAvgOrderValue,
+      statusCounts: monthlyStatusCounts,
+      paymentCounts: monthlyPaymentCounts,
+      selectedMonth: `${monthNames[month - 1]} ${year}`,
+    },
+    timeBased: {
+      today: todayStats,
+      thisWeek: thisWeekStats,
+      thisMonth: thisMonthStats,
+      lastMonth: lastMonthStats,
+    },
+    revenueComparison,
+  };
+};
+
 // Update Order Status
 const updateOrderStatus = async (
     orderId: string,
@@ -364,9 +546,9 @@ const updateOrderStatus = async (
         }
     }
 
-    // ─── Auto-mark COD payment as paid on delivery ──────
     const updateData: Record<string, any> = { orderStatus };
 
+    // ─── Auto-mark COD payment as paid on delivery ──────
     if (
         orderStatus === "delivered" &&
         order.paymentMethod === "COD" &&
@@ -374,6 +556,12 @@ const updateOrderStatus = async (
     ) {
         updateData.paymentStatus = "paid";
         updateData.paidAt = new Date();
+    }
+
+    // ─── Auto-mark payment as refunded on return ────────
+    if (orderStatus === "returned" && order.paymentStatus === "paid") {
+        updateData.paymentStatus = "refunded";
+        // updateData.refundedAt = new Date(); // Uncomment if your schema has this field
     }
 
     const updatedOrder = await Order.findByIdAndUpdate(
@@ -434,6 +622,7 @@ export const OrderService = {
     getAllOrders,
     getSingleOrder,
     getMyOrders,
+    getOrderStats,
     updateOrderStatus,
     updatePaymentStatus,
     deleteOrder,

@@ -97,9 +97,7 @@ const getAllCategories = async (
   }
 
   if (filters.keyword) {
-    query.$text = {
-      $keyword: filters.keyword,
-    };
+    query.$text = { $search: filters.keyword };
   }
 
   // Get categories with pagination
