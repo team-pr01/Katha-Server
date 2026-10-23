@@ -14,6 +14,7 @@ import { AddressRoutes } from "../modules/address/address.route";
 import { HeroRoutes } from "../modules/hero/hero.route";
 import { ProductVariantRoutes } from "../modules/product/productVariant/productVariant.route";
 import { MaterialCategoryRoutes } from "../modules/materials/materialCategory/materialCategory.route";
+import { NimbusPostRoutes } from "../modules/nimbusPost/nimbusPost.route";
 
 const router = Router();
 
@@ -65,6 +66,10 @@ const moduleRoutes = [
   {
     path: "/order",
     route: OrderRoutes,
+  },
+  {
+    path: "/shipping",
+    route: NimbusPostRoutes,
   },
   {
     path: "/personalized-order",

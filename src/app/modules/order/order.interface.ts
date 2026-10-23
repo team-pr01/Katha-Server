@@ -35,7 +35,7 @@ export type TOrder = {
         estimatedDelivery?: Date;
     };
     razorpayPaymentId?: string;
-     addedBy : "user" | "admin";
+    addedBy: "user" | "admin";
     confirmedAt?: Date;
     packedAt?: Date;
     shippedAt?: Date;

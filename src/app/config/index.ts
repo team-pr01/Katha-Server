@@ -20,4 +20,6 @@ export default {
   backend_url: process.env.BACKEND_URL,
   razorpay_api_key: process.env.RAZORPAY_API_KEY,
   razorpay_api_secret: process.env.RAZORPAY_API_SECRET,
+  nimbus_email: process.env.NIMBUS_EMAIL,
+  nimbus_password: process.env.NIMBUS_PASSWORD,
 };

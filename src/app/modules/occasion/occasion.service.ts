@@ -73,6 +73,10 @@ const addOccasion = async (
 };
 
 // Get All Occasions with Products Count
+const escapeRegExp = (string: string) => {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
+
 const getAllOccasions = async (
     filters: TOccasionFilters = {},
     skip = 0,
@@ -82,13 +86,19 @@ const getAllOccasions = async (
 
     // Apply filters
     if (filters.isActive !== undefined) {
+        // Ensure we convert the string "true"/"false" to actual booleans
         query.isActive = filters.isActive;
     }
 
-    if (filters.search) {
-        query.$text = {
-            $search: filters.search,
-        };
+    // Search on name and subOccasions.name
+    const searchTerm = filters.search;
+    
+    if (searchTerm) {
+        const regex = new RegExp(escapeRegExp(searchTerm), "i");
+        query.$or = [
+            { name: regex },
+            { "subOccasions.name": regex }
+        ];
     }
 
     // Get occasions with pagination
