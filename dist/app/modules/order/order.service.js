@@ -129,15 +129,18 @@ const verifyPayment = (orderId, razorpayPaymentId) => __awaiter(void 0, void 0, 
     return order;
 });
 // Get All Orders
+const escapeRegExp = (string) => {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
 const getAllOrders = (...args_1) => __awaiter(void 0, [...args_1], void 0, function* (filters = {}, skip = 0, limit = 10) {
     const query = {};
     if (filters.userId) {
         query.userId = filters.userId;
     }
-    if (filters.orderStatus) {
+    if (filters.orderStatus && filters.orderStatus !== "all") {
         query.orderStatus = filters.orderStatus;
     }
-    if (filters.paymentStatus) {
+    if (filters.paymentStatus && filters.paymentStatus !== "all") {
         query.paymentStatus = filters.paymentStatus;
     }
     if (filters.startDate || filters.endDate) {
@@ -146,6 +149,22 @@ const getAllOrders = (...args_1) => __awaiter(void 0, [...args_1], void 0, funct
             query.createdAt.$gte = filters.startDate;
         if (filters.endDate)
             query.createdAt.$lte = filters.endDate;
+    }
+    // ✅ Search across customer details using $regex
+    if (filters.keyword) {
+        const regex = new RegExp(escapeRegExp(filters.keyword), "i");
+        query.$or = [
+            { orderId: regex },
+            { "shippingAddress.firstName": regex },
+            { "shippingAddress.lastName": regex },
+            { "shippingAddress.email": regex },
+            { "shippingAddress.phoneNumber": regex },
+            { "shippingAddress.city": regex },
+            { "shippingAddress.state": regex },
+            { "shippingAddress.pinCode": regex },
+            { "shippingAddress.addressLine1": regex },
+            { "shippingAddress.addressLine2": regex },
+        ];
     }
     const total = yield order_model_1.default.countDocuments(query);
     const orders = yield order_model_1.default.find(query)
