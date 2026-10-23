@@ -351,7 +351,7 @@ const updateOrderStatus = async (
     }
 
     const updatedOrder = await Order.findByIdAndUpdate(
-        { orderId },
+        orderId,
         { $set: updateData },
         { new: true }
     );
